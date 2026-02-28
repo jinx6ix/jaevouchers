@@ -1,4 +1,9 @@
 export interface VoucherData {
+    clients: ReactNode;
+    adults: ReactNode;
+    children: string;
+    nights: ReactNode;
+    agentName: string;
     // Black / static-ish
     companyName: string;
     voucherNo: string;
