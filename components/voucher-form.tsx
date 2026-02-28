@@ -11,6 +11,75 @@ interface VoucherFormProps {
   onReset: () => void
 }
 
+const downloadVoucher = async () => {
+  try {
+    // Prepare your voucher data
+    const voucherData = {
+      voucherNo: "V001", // Replace with actual data
+      date: new Date().toLocaleDateString('en-GB'),
+      hotelName: "Your Hotel Name", // Replace with actual data
+      clients: "John Doe, Jane Doe", // Replace with actual data
+      doubles: "1", // Replace with actual data
+      checkIn: "2024-01-15", // Replace with actual data
+      checkOut: "2024-01-16", // Replace with actual data
+      dietary: "Vegetarian", // Replace with actual data
+    };
+
+    console.log('Sending request with data:', voucherData);
+
+    const response = await fetch('/api/download', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(voucherData),
+    });
+
+    // Check if response is OK
+    if (!response.ok) {
+      // Try to parse error as JSON, but handle case where response is not JSON
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      } else {
+        // If not JSON, get text
+        const errorText = await response.text();
+        throw new Error(errorText || `HTTP error! status: ${response.status}`);
+      }
+    }
+
+    // Check content type to ensure we received PDF
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/pdf')) {
+      throw new Error('Received non-PDF response from server');
+    }
+
+    // Get the blob from the response
+    const blob = await response.blob();
+    
+    // Create a download link
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `voucher-${voucherData.voucherNo}.pdf`;
+    
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    
+    // Cleanup
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+  } catch (error) {
+    console.error('Download failed:', error);
+    // Show user-friendly error message
+    alert(error instanceof Error ? error.message : 'Failed to download voucher. Please try again.');
+  }
+};
+
 export default function VoucherForm({ data, onInputChange, onReset }: VoucherFormProps) {
   return (
     <form className="space-y-6">
@@ -218,6 +287,13 @@ export default function VoucherForm({ data, onInputChange, onReset }: VoucherFor
         >
           Print Voucher
         </Button>
+      <Button
+        type="button"
+        onClick={downloadVoucher}
+        className="flex-1 bg-blue-600 hover:bg-blue-700"
+      >
+        Download Voucher
+      </Button>
       </div>
     </form>
   )
