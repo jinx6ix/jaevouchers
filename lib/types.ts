@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 export interface VoucherData {
     clients: ReactNode;
     adults: ReactNode;
@@ -33,30 +35,35 @@ export interface VoucherData {
   }
   
   export const defaultVoucherData: VoucherData = {
-    companyName: "Jae Travel Expeditions",
-    voucherNo: "JTE1050626",
-    date: new Date().toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }),
-  
-    hotelName: "",
-    roomType: "Standard Room  Halfboard",
-    clientNames: "",
-    noOfAdults: "02 Adults",
-    noOfChildren: "",
-    checkIn: "",
-    checkOut: "",
-    noOfNights: "",
-  
-    doubles: "",
-    twins: "",
-    singles: "",
-    triples: "",
-  
-    remarks: "PLEASE NOTE CLIENT DIETARY REQUEST  VEGETERIAN",
-  
-    signedFor: "Jae Travel Expeditions",
-    signedName: "Antony Waititu",
+      companyName: "Jae Travel Expeditions",
+      voucherNo: "JTE1050626",
+      date: new Date().toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+      }),
+
+      hotelName: "",
+      roomType: "Standard Room  Halfboard",
+      clientNames: "",
+      noOfAdults: "02 Adults",
+      noOfChildren: "",
+      checkIn: "",
+      checkOut: "",
+      noOfNights: "",
+
+      doubles: "",
+      twins: "",
+      singles: "",
+      triples: "",
+
+      remarks: "PLEASE NOTE CLIENT DIETARY REQUEST  VEGETERIAN",
+
+      signedFor: "Jae Travel Expeditions",
+      signedName: "Antony Waititu",
+      clients: undefined,
+      adults: undefined,
+      children: "",
+      nights: undefined,
+      agentName: ""
   };
