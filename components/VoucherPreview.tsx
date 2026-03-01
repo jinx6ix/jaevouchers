@@ -13,33 +13,49 @@ export default function VoucherPreview({ data }: Props) {
       style={{
         width: "210mm",
         minHeight: "297mm",
+        maxHeight: "297mm",
         background: "white",
         padding: "36px",
         fontFamily: "Arial, Helvetica, sans-serif",
-        fontSize: 14,
-        lineHeight: 1.35,
+        fontSize: 13, // slightly smaller to help fit content better
+        lineHeight: 1.4,
         position: "relative",
         boxSizing: "border-box",
         color: "#000",
         margin: "0 auto",
+        overflow: "hidden", // prevent content from spilling outside A4
       }}
     >
-      <div style={{ position: "absolute", top: "80px", left: 0, right: 0, textAlign: "center" }}>
-        Voucher No: {data.voucherNo}
+      {/* Voucher No - centered */}
+      <div
+        style={{
+          position: "absolute",
+          top: "75px",
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          fontSize: 14,
+          fontWeight: "bold",
+        }}
+      >
+        Voucher No: {data.voucherNo || ""}
       </div>
 
-      <div style={{ position: "absolute", top: "115px", left: "40px" }}>
-        Date: {data.date}
+      {/* Date */}
+      <div style={{ position: "absolute", top: "110px", left: "40px" }}>
+        Date: {data.date || ""}
       </div>
 
-      <div style={{ position: "absolute", top: "155px", left: "40px" }}>
-        Hotel Name: <span style={{ color: red }}>{data.hotelName}</span>
+      {/* Hotel & Room */}
+      <div style={{ position: "absolute", top: "150px", left: "40px" }}>
+        Hotel Name: <span style={{ color: red }}>{data.hotelName || ""}</span>
       </div>
 
-      <div style={{ position: "absolute", top: "180px", left: "40px" }}>
-        Room Type : <span style={{ color: red }}>{data.roomType}</span>
+      <div style={{ position: "absolute", top: "175px", left: "40px" }}>
+        Room Type: <span style={{ color: red }}>{data.roomType || ""}</span>
       </div>
 
+      {/* Clients - orange bar */}
       <div
         style={{
           position: "absolute",
@@ -50,48 +66,110 @@ export default function VoucherPreview({ data }: Props) {
           backgroundColor: orange,
           display: "flex",
           alignItems: "center",
-          paddingLeft: "8px",
+          paddingLeft: "10px",
           color: "#000",
           fontWeight: "bold",
         }}
       >
-        CLIENTS: <span style={{ fontWeight: "normal", marginLeft: "8px" }}>{data.clientNames}</span>
+        CLIENTS:{" "}
+        <span style={{ fontWeight: "normal", marginLeft: "10px" }}>
+          {data.clients || ""}
+        </span>
       </div>
 
-      <div style={{ position: "absolute", top: "270px", left: "40px", right: "40px", display: "flex", justifyContent: "space-between" }}>
+      {/* Guest counts */}
+      <div
+        style={{
+          position: "absolute",
+          top: "275px",
+          left: "40px",
+          right: "40px",
+          display: "flex",
+          justifyContent: "space-between",
+          fontSize: 13,
+        }}
+      >
         <div>
-          No. of Adults: <span style={{ color: red }}>{data.noOfAdults}</span>
+          No. of Adults: <span style={{ color: red }}>{data.adults || "0"}</span>
         </div>
         <div>
-          No. of children under 12 years <span style={{ color: red }}>{data.noOfChildren}</span>
+          No. of children under 12 years:{" "}
+          <span style={{ color: red }}>{data.children || "0"}</span>
         </div>
       </div>
 
+      {/* Booking instruction */}
       <div style={{ position: "absolute", top: "320px", left: "40px" }}>
         Please Reserve BOOK
       </div>
 
-      <div style={{ position: "absolute", top: "320px", left: "300px" }}>
-        <div>TWINS:</div>
-        <div>DOUBLES: <span style={{ color: red }}>{data.doubles}</span></div>
-        <div>SINGLES:</div>
-        <div>TRIPLES:</div>
+      {/* Room types */}
+      <div
+        style={{
+          position: "absolute",
+          top: "320px",
+          left: "300px",
+          lineHeight: 1.6,
+        }}
+      >
+        <div>TWINS: —</div>
+        <div>
+          DOUBLES: <span style={{ color: red }}>{data.doubles || "0"}</span>
+        </div>
+        <div>SINGLES: —</div>
+        <div>TRIPLES: —</div>
       </div>
 
-      <div style={{ position: "absolute", top: "420px", left: "40px" }}>
-        <div>Check in: <span style={{ color: red }}>{data.checkIn}</span></div>
-        <div>Check out: <span style={{ color: red }}>{data.checkOut}</span></div>
-        <div>Number of Nights: <span style={{ color: red }}>{data.noOfNights}</span></div>
+      {/* Check-in / Check-out / Nights */}
+      <div
+        style={{
+          position: "absolute",
+          top: "430px",
+          left: "40px",
+          lineHeight: 1.6,
+        }}
+      >
+        <div>
+          Check in: <span style={{ color: red }}>{data.checkIn || ""}</span>
+        </div>
+        <div>
+          Check out: <span style={{ color: red }}>{data.checkOut || ""}</span>
+        </div>
+        <div>
+          Number of Nights:{" "}
+          <span style={{ color: red }}>{data.nights || ""}</span>
+        </div>
       </div>
 
-      <div style={{ position: "absolute", top: "510px", left: "40px", display: "flex" }}>
-        Remarks: <span style={{ color: red, marginLeft: "8px" }}>{data.remarks}</span>
+      {/* Remarks */}
+      <div
+        style={{
+          position: "absolute",
+          top: "520px",
+          left: "40px",
+          display: "flex",
+          maxWidth: "515px",
+          lineHeight: 1.4,
+        }}
+      >
+        Remarks:{" "}
+        <span style={{ color: red, marginLeft: "8px" }}>
+          {data.remarks || ""}
+        </span>
       </div>
 
-      <div style={{ position: "absolute", top: "590px", left: "40px" }}>
+      {/* Signature block */}
+      <div
+        style={{
+          position: "absolute",
+          top: "590px",
+          left: "40px",
+          lineHeight: 1.5,
+        }}
+      >
         <div>Signed</div>
-        <div>For: {data.signedFor}</div>
-        <div>Name: {data.signedName}</div>
+        <div>For: Jae Travel Expeditions</div>
+        <div>Name: {data.agentName || "Antony Waititu"}</div>
       </div>
     </div>
   );
