@@ -225,7 +225,7 @@ export default function VoucherForm({ data, onChange, onReset }: VoucherFormProp
         <h3 className="text-lg font-semibold text-red-600">Room Configuration</h3>
         <div>
           <Label htmlFor="doubles" className="text-red-600 font-semibold">
-            Number of Double Rooms
+            Number of Rooms
           </Label>
           <Input
             id="doubles"
