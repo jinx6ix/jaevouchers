@@ -5,22 +5,17 @@ import {
   Text,
   View,
   StyleSheet,
-  Font,
   Image,
 } from "@react-pdf/renderer";
 
-// Optional: register a custom font if you want better matching (Helvetica is usually fine)
-// Font.register({ family: "Helvetica", fonts: [...] });
-
 const styles = StyleSheet.create({
   page: {
-    padding: 40,          // matches your original pdfkit margin=40
+    padding: 40,
     fontFamily: "Helvetica",
     fontSize: 11,
     color: "#000",
   },
 
-  // ── Header with logos ──
   header: {
     position: "absolute",
     top: 25,
@@ -31,88 +26,53 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
   },
-  logo: {
-    width: 130,
-    height: "auto",     // preserves aspect ratio
-  },
+  logo: { width: 130, height: "auto" },
 
   voucherNo: {
     position: "absolute",
-    top: 110,           // shifted down to avoid overlapping logos
+    top: 115,
     left: 0,
     right: 0,
     textAlign: "center",
-    fontSize: 11,
+    fontSize: 12,
+    fontWeight: 700,
   },
-  date: {
-    position: "absolute",
-    top: 145,
-    left: 40,
-  },
-  hotelRow: {
-    position: "absolute",
-    top: 175,
-    left: 40,
-    flexDirection: "row",
-  },
-  roomRow: {
-    position: "absolute",
-    top: 200,
-    left: 40,
-    flexDirection: "row",
-  },
+
+  date: { position: "absolute", top: 145, left: 40 },
+
+  hotelRow: { position: "absolute", top: 175, left: 40, flexDirection: "row" },
+  roomRow: { position: "absolute", top: 200, left: 40, flexDirection: "row" },
+
   orangeBar: {
     position: "absolute",
-    top: 245,
+    top: 235,
     left: 40,
     width: 515,
-    height: 25,
+    height: 28,
     backgroundColor: "#ff7a00",
     flexDirection: "row",
     alignItems: "center",
-    paddingLeft: 10,
+    paddingLeft: 12,
   },
+
   adultsRow: {
     position: "absolute",
-    top: 290,
+    top: 280,
     left: 40,
     right: 40,
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  bookText: {
-    position: "absolute",
-    top: 335,
-    left: 40,
-  },
-  roomsLeft: {
-    position: "absolute",
-    top: 335,
-    left: 300,
-  },
-  checkinBlock: {
-    position: "absolute",
-    top: 455,
-    left: 40,
-  },
-  remarksBlock: {
-    position: "absolute",
-    top: 545,
-    left: 40,
-    flexDirection: "row",
-  },
-  signatureBlock: {
-    position: "absolute",
-    top: 620,
-    left: 40,
-  },
 
-  label: {
-    color: "#000",
-  },
-  value: {
-    color: "#c00", // vivid red – matches your original .fillColor("red")
-  },
+  bookText: { position: "absolute", top: 330, left: 40, fontWeight: 700 },
+  roomsSection: { position: "absolute", top: 330, left: 260 },
+
+  checkinBlock: { position: "absolute", top: 430, left: 40 },
+  remarksBlock: { position: "absolute", top: 520, left: 40, right: 40 },
+  signatureBlock: { position: "absolute", top: 620, left: 40 },
+
+  label: { fontWeight: 700 },
+  value: { color: "#c00" },
 });
 
 interface Props {
@@ -123,42 +83,37 @@ export default function VoucherPDF({ data }: Props) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* Logos – top left & top right */}
+        {/* Logos */}
         <View style={styles.header}>
-          <Image
-            style={styles.logo}
-            src="/logos/left-logo.png"     // public/logos/left-logo.png
-          />
-          <Image
-            style={styles.logo}
-            src="/logos/right-logo.png"    // public/logos/right-logo.png
-          />
+          <Image style={styles.logo} src="/logos/left-logo.png" />
+          <Image style={styles.logo} src="/logos/right-logo.png" />
         </View>
 
-        {/* Voucher No – centered */}
+        {/* Voucher Number */}
         <Text style={styles.voucherNo}>Voucher No: {data.voucherNo}</Text>
 
         {/* Date */}
         <Text style={styles.date}>Date: {data.date}</Text>
 
-        {/* Hotel & Room Type */}
+        {/* Hotel Name */}
         <View style={styles.hotelRow}>
           <Text style={styles.label}>Hotel Name: </Text>
           <Text style={styles.value}>{data.hotelName}</Text>
         </View>
 
+        {/* Room Type */}
         <View style={styles.roomRow}>
           <Text style={styles.label}>Room Type : </Text>
           <Text style={styles.value}>{data.roomType}</Text>
         </View>
 
-        {/* Clients – orange bar */}
+        {/* Orange CLIENTS bar */}
         <View style={styles.orangeBar}>
           <Text style={{ fontWeight: 700, marginRight: 10 }}>CLIENTS:</Text>
-          <Text>{data.clients}</Text>           {/* adjusted field name */}
+          <Text>{data.clients}</Text>
         </View>
 
-        {/* Guest counts */}
+        {/* Adults & Children */}
         <View style={styles.adultsRow}>
           <View style={{ flexDirection: "row" }}>
             <Text style={styles.label}>No. of Adults: </Text>
@@ -166,23 +121,29 @@ export default function VoucherPDF({ data }: Props) {
           </View>
           <View style={{ flexDirection: "row" }}>
             <Text style={styles.label}>No. of children under 12 years </Text>
-            <Text style={styles.value}>{data.children || ""}</Text>
+            <Text style={styles.value}>{data.children}</Text>
           </View>
         </View>
 
-        {/* Booking & Room types */}
+        {/* Please Reserve BOOK + Room Breakdown (exact layout from your PDF) */}
         <Text style={styles.bookText}>Please Reserve BOOK</Text>
 
-        <View style={styles.roomsLeft}>
-          <Text>TWINS:</Text>
+        <View style={styles.roomsSection}>
           <Text>
-            DOUBLES: <Text style={styles.value}>{data.doubles}</Text>
+            TWINS: <Text style={styles.value}>{data.twins || ""}</Text>
           </Text>
-          <Text>SINGLES:</Text>
-          <Text>TRIPLES:</Text>
+          <Text>
+            DOUBLES: <Text style={styles.value}>{data.doubles || ""}</Text>
+          </Text>
+          <Text>
+            SINGLES: <Text style={styles.value}>{data.singles || ""}</Text>
+          </Text>
+          <Text>
+            TRIPLES: <Text style={styles.value}>{data.triples || ""}</Text>
+          </Text>
         </View>
 
-        {/* Check-in / out / nights */}
+        {/* Check-in / Check-out / Nights */}
         <View style={styles.checkinBlock}>
           <Text>
             Check in: <Text style={styles.value}>{data.checkIn}</Text>
@@ -198,16 +159,14 @@ export default function VoucherPDF({ data }: Props) {
         {/* Remarks */}
         <View style={styles.remarksBlock}>
           <Text style={styles.label}>Remarks: </Text>
-          <Text style={styles.value}>
-            {data.remarks || "PLEASE NOTE CLIENT DIETARY REQUEST VEGETERIAN"}
-          </Text>
+          <Text style={styles.value}>{data.remarks}</Text>
         </View>
 
         {/* Signature */}
         <View style={styles.signatureBlock}>
           <Text>Signed</Text>
-          <Text>For: Jae Travel Expeditions</Text>
-          <Text>Name: {data.agentName || "Antony Waititu"}</Text>
+          <Text>For: {data.signedFor}</Text>
+          <Text>Name: {data.signedName}</Text>
         </View>
       </Page>
     </Document>

@@ -17,13 +17,13 @@ export default function VoucherPreview({ data }: Props) {
         background: "white",
         padding: "36px",
         fontFamily: "Arial, Helvetica, sans-serif",
-        fontSize: 13, // slightly smaller to help fit content better
+        fontSize: 13,
         lineHeight: 1.4,
         position: "relative",
         boxSizing: "border-box",
         color: "#000",
         margin: "0 auto",
-        overflow: "hidden", // prevent content from spilling outside A4
+        overflow: "hidden",
       }}
     >
       {/* Voucher No - centered */}
@@ -46,7 +46,7 @@ export default function VoucherPreview({ data }: Props) {
         Date: {data.date || ""}
       </div>
 
-      {/* Hotel & Room */}
+      {/* Hotel & Room Type */}
       <div style={{ position: "absolute", top: "150px", left: "40px" }}>
         Hotel Name: <span style={{ color: red }}>{data.hotelName || ""}</span>
       </div>
@@ -99,11 +99,11 @@ export default function VoucherPreview({ data }: Props) {
       </div>
 
       {/* Booking instruction */}
-      <div style={{ position: "absolute", top: "320px", left: "40px" }}>
+      <div style={{ position: "absolute", top: "320px", left: "40px", fontWeight: "bold" }}>
         Please Reserve BOOK
       </div>
 
-      {/* Room types */}
+      {/* Room Breakdown - now dynamic (exact match to your PDF) */}
       <div
         style={{
           position: "absolute",
@@ -112,12 +112,18 @@ export default function VoucherPreview({ data }: Props) {
           lineHeight: 1.6,
         }}
       >
-        <div>TWINS: —</div>
         <div>
-          DOUBLES: <span style={{ color: red }}>{data.doubles || "0"}</span>
+          TWINS: <span style={{ color: red }}>{data.twins || ""}</span>
         </div>
-        <div>SINGLES: —</div>
-        <div>TRIPLES: —</div>
+        <div>
+          DOUBLES: <span style={{ color: red }}>{data.doubles || ""}</span>
+        </div>
+        <div>
+          SINGLES: <span style={{ color: red }}>{data.singles || ""}</span>
+        </div>
+        <div>
+          TRIPLES: <span style={{ color: red }}>{data.triples || ""}</span>
+        </div>
       </div>
 
       {/* Check-in / Check-out / Nights */}
@@ -168,8 +174,8 @@ export default function VoucherPreview({ data }: Props) {
         }}
       >
         <div>Signed</div>
-        <div>For: Jae Travel Expeditions</div>
-        <div>Name: {data.agentName || "Antony Waititu"}</div>
+        <div>For: {data.signedFor}</div>
+        <div>Name: {data.signedName || data.agentName || "Antony Waititu"}</div>
       </div>
     </div>
   );

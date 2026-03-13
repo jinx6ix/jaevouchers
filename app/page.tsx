@@ -19,7 +19,11 @@ export default function VoucherGenerator() {
 
   const previewRef = useRef<HTMLDivElement>(null);
 
-  const update = (field: keyof VoucherData, value: string) => {
+  // UPDATED: now supports both string and number fields
+  const update = <K extends keyof VoucherData>(
+    field: K,
+    value: VoucherData[K]
+  ) => {
     setData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -37,76 +41,29 @@ export default function VoucherGenerator() {
   };
 
   const handlePrint = () => {
-    // Optional: you can add a small delay or force reflow if needed
     window.print();
   };
 
   return (
     <>
-      {/* Global print styles */}
+      {/* Global print styles - unchanged */}
       <style jsx global>{`
         @media print {
-          @page {
-            size: A4 portrait;
-            margin: 8mm 10mm;
-          }
-
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            height: 100% !important;
-            background: white !important;
-          }
-
-          /* Hide everything except print content */
-          body > *:not(#print-content-wrapper) {
-            display: none !important;
-          }
-
+          @page { size: A4 portrait; margin: 8mm 10mm; }
+          html, body { margin: 0 !important; padding: 0 !important; height: 100% !important; background: white !important; }
+          body > *:not(#print-content-wrapper) { display: none !important; }
           #print-content-wrapper {
-            display: block !important;
-            position: relative !important;
-            width: 210mm !important;
-            min-height: 297mm !important;
-            max-height: 297mm !important;
-            margin: 0 auto !important;
-            padding: 0 !important;
-            background: white !important;
-            box-shadow: none !important;
-            overflow: hidden !important;
+            display: block !important; position: relative !important; width: 210mm !important;
+            min-height: 297mm !important; max-height: 297mm !important; margin: 0 auto !important;
+            padding: 0 !important; background: white !important; box-shadow: none !important;
           }
-
-          /* Make sure voucher content fills the page properly */
-          #printable-voucher {
-            width: 100% !important;
-            height: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-
-          /* Remove scroll, shadows, borders in print */
-          .overflow-auto,
-          .shadow-xl,
-          .border,
-          .rounded-lg,
-          .print\\:hidden {
-            display: none !important;
-          }
-
-          /* Prevent browser headers/footers from adding extra pages */
-          body {
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
+          #printable-voucher { width: 100% !important; height: 100% !important; }
+          .overflow-auto, .shadow-xl, .border, .rounded-lg { display: none !important; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
-
-        /* Screen only - hide print wrapper */
-        #print-content-wrapper {
-          display: none;
-        }
+        #print-content-wrapper { display: none; }
       `}</style>
 
-      {/* This wrapper is only visible during print */}
       <div id="print-content-wrapper">
         <div id="printable-voucher" ref={previewRef}>
           <VoucherPreview data={data} />
@@ -133,7 +90,7 @@ export default function VoucherGenerator() {
               />
             </Card>
 
-            {/* Preview + Actions */}
+            {/* Preview + Actions - unchanged */}
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-2xl font-semibold">Preview</h2>

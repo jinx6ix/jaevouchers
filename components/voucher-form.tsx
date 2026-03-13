@@ -1,288 +1,208 @@
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { VoucherData } from '@/lib/types'   // ← make sure this path is correct
+"use client";
 
-interface VoucherFormProps {
-  data: VoucherData
-  onChange: (field: keyof VoucherData, value: string) => void
-  onReset: () => void
+import { VoucherData } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+
+interface Props {
+  data: VoucherData;
+  onChange: <K extends keyof VoucherData>(field: K, value: VoucherData[K]) => void;
+  onReset: () => void;
 }
 
-export default function VoucherForm({ data, onChange, onReset }: VoucherFormProps) {
-  const handleDownload = async () => {
-    try {
-      const voucherDataForAPI = {
-        voucherNo: data.voucherNo || `V-${Date.now().toString().slice(-6)}`,
-        date: data.date || new Date().toLocaleDateString('en-GB'),
-        hotelName: data.hotelName || '',
-        roomType: data.roomType || '',
-        clients: data.clients || '',
-        adults: data.adults || '0',
-        children: data.children || '0',
-        doubles: data.doubles || '0',
-        checkIn: data.checkIn || '',
-        checkOut: data.checkOut || '',
-        nights: data.nights || '',
-        remarks: data.remarks || '',
-        agentName: data.agentName || 'Antony Waititu',
-      }
-
-      console.log('Sending download request with:', voucherDataForAPI)
-
-      const response = await fetch('/api/download', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(voucherDataForAPI),
-      })
-
-      if (!response.ok) {
-        let errorMessage = `Server error (${response.status})`
-        try {
-          const errorData = await response.json()
-          errorMessage = errorData.error || errorMessage
-        } catch {}
-        throw new Error(errorMessage)
-      }
-
-      const contentType = response.headers.get('content-type')
-      if (!contentType?.includes('application/pdf')) {
-        throw new Error('Server did not return a PDF file')
-      }
-
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `voucher-${voucherDataForAPI.voucherNo}.pdf`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-    } catch (error) {
-      console.error('Download failed:', error)
-      alert(
-        error instanceof Error
-          ? error.message
-          : 'Failed to generate/download the PDF. Please check the form and try again.'
-      )
-    }
-  }
+export default function VoucherForm({ data, onChange, onReset }: Props) {
+  const totalRooms = (data.singles || 0) + (data.twins || 0) + (data.doubles || 0) + (data.triples || 0);
 
   return (
-    <form className="space-y-6">
-      {/* Voucher Basics */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-red-600">Voucher Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="voucherNo" className="text-red-600 font-semibold">
-              Voucher No *
-            </Label>
-            <Input
-              id="voucherNo"
-              placeholder="e.g. V2025-078"
-              value={data.voucherNo || ''}
-              onChange={(e) => onChange('voucherNo', e.target.value)}
-              className="mt-1 border-red-300 focus:border-red-500"
-            />
-          </div>
-          <div>
-            <Label htmlFor="date" className="text-red-600 font-semibold">
-              Date *
-            </Label>
-            <Input
-              id="date"
-              placeholder="e.g. 01 June 2025"
-              value={data.date || ''}
-              onChange={(e) => onChange('date', e.target.value)}
-              className="mt-1 border-red-300 focus:border-red-500"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Hotel */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-red-600">Hotel Details</h3>
+    <div className="space-y-8">
+      {/* Basic Info */}
+      <div className="grid grid-cols-2 gap-6">
         <div>
-          <Label htmlFor="hotelName" className="text-red-600 font-semibold">
-            Hotel Name *
-          </Label>
-          <Input
-            id="hotelName"
-            placeholder="e.g. Golden Tulip"
-            value={data.hotelName || ''}
-            onChange={(e) => onChange('hotelName', e.target.value)}
-            className="mt-1 border-red-300 focus:border-red-500"
+          <label className="block text-sm font-medium mb-1">Voucher No</label>
+          <input
+            title="Voucher No"
+            type="text"
+            value={data.voucherNo}
+            onChange={(e) => onChange("voucherNo", e.target.value)}
+            className="w-full border rounded px-3 py-2"
           />
         </div>
         <div>
-          <Label htmlFor="roomType" className="text-red-600 font-semibold">
-            Room Type *
-          </Label>
-          <Input
-            id="roomType"
-            placeholder="e.g. Standard Room Halfboard"
-            value={data.roomType || ''}
-            onChange={(e) => onChange('roomType', e.target.value)}
-            className="mt-1 border-red-300 focus:border-red-500"
+          <label className="block text-sm font-medium mb-1">Date</label>
+          <input
+            title="Date"
+            type="text"
+            value={data.date}
+            onChange={(e) => onChange("date", e.target.value)}
+            className="w-full border rounded px-3 py-2"
           />
         </div>
-      </div>
 
-      {/* Clients */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-red-600">Client Information</h3>
-        <div>
-          <Label htmlFor="clients" className="text-red-600 font-semibold">
-            Clients / Guest Names *
-          </Label>
-          <Input
-            id="clients"
-            placeholder="e.g. Niranjana Sundaram x2, Family Smith"
-            value={data.clients || ''}
-            onChange={(e) => onChange('clients', e.target.value)}
-            className="mt-1 border-red-300 focus:border-red-500"
+        <div className="col-span-2">
+          <label className="block text-sm font-medium mb-1">Hotel Name</label>
+          <input
+            type="text"
+            value={data.hotelName}
+            onChange={(e) => onChange("hotelName", e.target.value)}
+            className="w-full border rounded px-3 py-2"
+            placeholder="Lake Nakuru Lodge"
           />
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="adults" className="text-red-600 font-semibold">
-              No. of Adults
-            </Label>
-            <Input
-              id="adults"
-              placeholder="e.g. 2"
-              value={data.adults || ''}
-              onChange={(e) => onChange('adults', e.target.value)}
-              className="mt-1 border-red-300 focus:border-red-500"
-            />
-          </div>
-          <div>
-            <Label htmlFor="children" className="text-red-600 font-semibold">
-              No. of Children (under 12)
-            </Label>
-            <Input
-              id="children"
-              placeholder="e.g. 1"
-              value={data.children || ''}
-              onChange={(e) => onChange('children', e.target.value)}
-              className="mt-1 border-red-300 focus:border-red-500"
-            />
-          </div>
-        </div>
-      </div>
 
-      {/* Dates */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-red-600">Travel Dates</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="checkIn" className="text-red-600 font-semibold">
-              Check In *
-            </Label>
-            <Input
-              id="checkIn"
-              placeholder="e.g. 05 June 2026"
-              value={data.checkIn || ''}
-              onChange={(e) => onChange('checkIn', e.target.value)}
-              className="mt-1 border-red-300 focus:border-red-500"
-            />
-          </div>
-          <div>
-            <Label htmlFor="checkOut" className="text-red-600 font-semibold">
-              Check Out *
-            </Label>
-            <Input
-              id="checkOut"
-              placeholder="e.g. 08 June 2026"
-              value={data.checkOut || ''}
-              onChange={(e) => onChange('checkOut', e.target.value)}
-              className="mt-1 border-red-300 focus:border-red-500"
-            />
-          </div>
+        <div className="col-span-2">
+          <label className="block text-sm font-medium mb-1">Room Type (e.g. Standard Room FullBoard)</label>
+          <input
+            title="Room Type"
+            type="text"
+            value={data.roomType}
+            onChange={(e) => onChange("roomType", e.target.value)}
+            className="w-full border rounded px-3 py-2"
+          />
+        </div>
+
+        <div className="col-span-2">
+          <label className="block text-sm font-medium mb-1">Clients</label>
+          <input
+            type="text"
+            value={String(data.clients || "")}
+            onChange={(e) => onChange("clients", e.target.value)}
+            className="w-full border rounded px-3 py-2"
+            placeholder="Amit Shirali"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">No. of Adults</label>
+          <input
+            title="No. of Adults"
+            type="number"
+            value={data.adults}
+            onChange={(e) => onChange("adults", Number(e.target.value))}
+            className="w-full border rounded px-3 py-2"
+          />
         </div>
         <div>
-          <Label htmlFor="nights" className="text-red-600 font-semibold">
-            Number of Nights *
-          </Label>
-          <Input
-            id="nights"
-            placeholder="e.g. 3 nights"
-            value={data.nights || ''}
-            onChange={(e) => onChange('nights', e.target.value)}
-            className="mt-1 border-red-300 focus:border-red-500"
+          <label className="block text-sm font-medium mb-1">No. of Children (under 12)</label>
+          <input
+            title="No. of Children"
+            type="number"
+            value={data.children}
+            onChange={(e) => onChange("children", Number(e.target.value))}
+            className="w-full border rounded px-3 py-2"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Check In</label>
+          <input
+            type="text"
+            value={data.checkIn}
+            onChange={(e) => onChange("checkIn", e.target.value)}
+            className="w-full border rounded px-3 py-2"
+            placeholder="24 June 2026"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Check Out</label>
+          <input
+            type="text"
+            value={data.checkOut}
+            onChange={(e) => onChange("checkOut", e.target.value)}
+            className="w-full border rounded px-3 py-2"
+            placeholder="25 June 2026"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Number of Nights</label>
+          <input
+            title="Number of Nights"
+            type="number"
+            value={data.nights}
+            onChange={(e) => onChange("nights", Number(e.target.value))}
+            className="w-full border rounded px-3 py-2"
           />
         </div>
       </div>
 
-      {/* Rooms */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-red-600">Room Configuration</h3>
-        <div>
-          <Label htmlFor="doubles" className="text-red-600 font-semibold">
-            Number of Rooms
-          </Label>
-          <Input
-            id="doubles"
-            placeholder="e.g. 1"
-            value={data.doubles || ''}
-            onChange={(e) => onChange('doubles', e.target.value)}
-            className="mt-1 border-red-300 focus:border-red-500"
-          />
+      {/* ROOM TYPES SECTION - THIS IS WHAT YOU ASKED FOR */}
+      <div className="border-t pt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-lg">Room Types</h3>
+          <div className="text-sm font-medium text-gray-600">
+            Total Rooms: <span className="text-red-600 font-bold">{totalRooms}</span>
+          </div>
         </div>
+
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium mb-1">Singles</label>
+            <input
+              title="Singles"
+              type="number"
+              min="0"
+              value={data.singles || 0}
+              onChange={(e) => onChange("singles", Number(e.target.value))}
+              className="w-full border rounded px-4 py-3 text-center text-xl font-semibold"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Twins</label>
+            <input
+              title="Twins"
+              type="number"
+              min="0"
+              value={data.twins || 0}
+              onChange={(e) => onChange("twins", Number(e.target.value))}
+              className="w-full border rounded px-4 py-3 text-center text-xl font-semibold"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Doubles</label>
+            <input
+              title="Doubles"
+              type="number"
+              min="0"
+              value={data.doubles || 0}
+              onChange={(e) => onChange("doubles", Number(e.target.value))}
+              className="w-full border rounded px-4 py-3 text-center text-xl font-semibold"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Triples</label>
+            <input
+              title="Triples"
+              type="number"
+              min="0"
+              value={data.triples || 0}
+              onChange={(e) => onChange("triples", Number(e.target.value))}
+              className="w-full border rounded px-4 py-3 text-center text-xl font-semibold"
+            />
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 mt-3">
+          Enter any combination of room types. Preview and PDF update instantly.
+        </p>
       </div>
 
       {/* Remarks */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-red-600">Additional Information</h3>
-        <div>
-          <Label htmlFor="remarks" className="text-red-600 font-semibold">
-            Remarks / Special Requests
-          </Label>
-          <Textarea
-            id="remarks"
-            placeholder="e.g. PLEASE NOTE CLIENT DIETARY REQUEST VEGETARIAN"
-            value={data.remarks || ''}
-            onChange={(e) => onChange('remarks', e.target.value)}
-            className="mt-1 border-red-300 focus:border-red-500"
-            rows={3}
-          />
-        </div>
+      <div>
+        <label className="block text-sm font-medium mb-1">Remarks</label>
+        <textarea
+          title="Remarks"
+          value={data.remarks}
+          onChange={(e) => onChange("remarks", e.target.value)}
+          rows={3}
+          className="w-full border rounded px-3 py-2"
+        />
       </div>
 
-      {/* Agent */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-red-600">Prepared By</h3>
-        <div>
-          <Label htmlFor="agentName" className="text-red-600 font-semibold">
-            Agent Name
-          </Label>
-          <Input
-            id="agentName"
-            placeholder="e.g. Antony Waititu"
-            value={data.agentName || ''}
-            onChange={(e) => onChange('agentName', e.target.value)}
-            className="mt-1 border-red-300 focus:border-red-500"
-          />
-        </div>
-      </div>
-
-      {/* Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 pt-6">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onReset}
-          className="flex-1"
-        >
-          Reset Form
-        </Button>
-      </div>
-    </form>
-  )
+      {/* Reset Button */}
+      <Button
+        onClick={onReset}
+        variant="outline"
+        className="w-full"
+      >
+        Reset Form
+      </Button>
+    </div>
+  );
 }
