@@ -64,12 +64,50 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
 
-  bookText: { position: "absolute", top: 330, left: 40, fontWeight: 700 },
+  bookText: { 
+    position: "absolute", 
+    top: 330, 
+    left: 40, 
+    fontWeight: 700,
+    fontSize: 12,
+  },
   roomsSection: { position: "absolute", top: 330, left: 260 },
+
+  extraBedSection: {
+    marginTop: 8,
+    paddingTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: "#ccc",
+    borderTopStyle: "dashed",
+  },
+  extraBedText: {
+    color: "#0066cc",
+    fontWeight: "bold",
+  },
+  extraBedValue: {
+    color: "#0066cc",
+    fontWeight: "bold",
+  },
+  extraBedNote: {
+    fontSize: 9,
+    color: "#666",
+    marginLeft: 4,
+  },
 
   checkinBlock: { position: "absolute", top: 430, left: 40 },
   remarksBlock: { position: "absolute", top: 520, left: 40, right: 40 },
   signatureBlock: { position: "absolute", top: 620, left: 40 },
+
+  statusBadge: {
+    position: "absolute",
+    top: 100,
+    right: 40,
+    padding: "4 8",
+    borderRadius: 4,
+    fontSize: 10,
+    fontWeight: "bold",
+    color: "white",
+  },
 
   label: { fontWeight: 700 },
   value: { color: "#c00" },
@@ -80,6 +118,35 @@ interface Props {
 }
 
 export default function VoucherPDF({ data }: Props) {
+  // Get booking text based on status
+  const getBookingText = () => {
+    switch (data.bookingStatus) {
+      case "book":
+        return "Please Book";
+      case "amend":
+        return "Please Amend";
+      case "reserve":
+      default:
+        return "Please Reserve";
+    }
+  };
+
+  // Get booking color based on status
+  const getBookingColor = () => {
+    switch (data.bookingStatus) {
+      case "book":
+        return "#008000";
+      case "amend":
+        return "#FFA500";
+      default:
+        return "#000";
+    }
+  };
+
+  // Check if extra bed should be shown
+  const hasChildren = data.children && parseInt(data.children.toString()) > 0;
+  const hasExtraBed = data.extraBed && parseInt(data.extraBed.toString()) > 0;
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -88,6 +155,15 @@ export default function VoucherPDF({ data }: Props) {
           <Image style={styles.logo} src="/logos/left-logo.png" />
           <Image style={styles.logo} src="/logos/right-logo.png" />
         </View>
+
+        {/* Status Badge */}
+        {data.bookingStatus && data.bookingStatus !== "reserve" && (
+          <View style={[styles.statusBadge, { 
+            backgroundColor: data.bookingStatus === "book" ? "#4CAF50" : "#FFA500" 
+          }]}>
+            <Text>{data.bookingStatus === "book" ? "BOOKED" : "AMENDED"}</Text>
+          </View>
+        )}
 
         {/* Voucher Number */}
         <Text style={styles.voucherNo}>Voucher No: {data.voucherNo}</Text>
@@ -125,9 +201,12 @@ export default function VoucherPDF({ data }: Props) {
           </View>
         </View>
 
-        {/* Please Reserve BOOK + Room Breakdown (exact layout from your PDF) */}
-        <Text style={styles.bookText}>Please Reserve BOOK</Text>
+        {/* Dynamic Booking Text */}
+        <Text style={[styles.bookText, { color: getBookingColor() }]}>
+          {getBookingText()}
+        </Text>
 
+        {/* Room Breakdown */}
         <View style={styles.roomsSection}>
           <Text>
             TWINS: <Text style={styles.value}>{data.twins || ""}</Text>
@@ -141,6 +220,19 @@ export default function VoucherPDF({ data }: Props) {
           <Text>
             TRIPLES: <Text style={styles.value}>{data.triples || ""}</Text>
           </Text>
+          
+          {/* Extra Bed - conditionally shown */}
+          {hasChildren && hasExtraBed && (
+            <View style={styles.extraBedSection}>
+              <Text>
+                <Text style={styles.extraBedText}>EXTRA BED: </Text>
+                <Text style={styles.extraBedValue}>{data.extraBed}</Text>
+                <Text style={styles.extraBedNote}>
+                  {' '}(for {data.children} child{parseInt(data.children.toString()) > 1 ? 'ren' : ''})
+                </Text>
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Check-in / Check-out / Nights */}
@@ -165,8 +257,8 @@ export default function VoucherPDF({ data }: Props) {
         {/* Signature */}
         <View style={styles.signatureBlock}>
           <Text>Signed</Text>
-          <Text>For: {data.signedFor}</Text>
-          <Text>Name: {data.signedName}</Text>
+          <Text>For: {data.signedFor || "Jae Travel Expeditions"}</Text>
+          <Text>Name: {data.signedName || data.agentName || "Antony Waititu"}</Text>
         </View>
       </Page>
     </Document>
