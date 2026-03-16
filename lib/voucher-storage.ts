@@ -11,52 +11,12 @@ const generateId = (): string => {
   return `${timestamp}-${randomStr}${randomStr2}`;
 };
 
-// Generate a unique voucher number in format JTE + date (DDMMYY) + sequence
+// Generate a unique voucher number in format JTE + sequence + date (DDMMYY)
 // Example: JTE1050626 (JTE + 1 + 050626)
 export const generateVoucherNumber = (): string => {
   const date = new Date();
   
   // Format date as DDMMYY (e.g., 050626 for 5th June 2026)
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = String(date.getFullYear()).slice(-2); // Get last 2 digits of year
-  const dateStr = `${day}${month}${year}`; // DDMMYY format
-  
-  // Get existing vouchers to determine the next sequence number
-  const vouchers = loadVouchers();
-  
-  // Filter vouchers that match the pattern JTE* + today's date
-  // This regex matches JTE followed by any digits and then today's date
-  const todayVouchers = vouchers.filter(v => {
-    if (!v.voucherNo) return false;
-    // Check if voucher number contains today's date and starts with JTE
-    return v.voucherNo.includes(dateStr) && v.voucherNo.startsWith('JTE');
-  });
-  
-  // Generate sequence number (single digit for now, but could be expanded)
-  // The sequence is the first digit after JTE
-  let nextSequence = 1;
-  
-  if (todayVouchers.length > 0) {
-    // Find the highest sequence number used today
-    const sequences = todayVouchers.map(v => {
-      const match = v.voucherNo?.match(/JTE(\d)/);
-      return match ? parseInt(match[1]) : 0;
-    });
-    nextSequence = Math.max(...sequences, 0) + 1;
-  }
-  
-  // Format: JTE + sequence (1 digit) + date (DDMMYY)
-  // Example: JTE1050626 (JTE + 1 + 050626)
-  return `JTE${nextSequence}${dateStr}`;
-};
-
-// Alternative version if you want the sequence to always be 1 digit
-// If you want to support multi-digit sequences in the future, use this:
-export const generateVoucherNumberMultiDigit = (): string => {
-  const date = new Date();
-  
-  // Format date as DDMMYY
   const day = String(date.getDate()).padStart(2, '0');
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = String(date.getFullYear()).slice(-2);
@@ -65,25 +25,23 @@ export const generateVoucherNumberMultiDigit = (): string => {
   // Get existing vouchers
   const vouchers = loadVouchers();
   
-  // Filter vouchers for today
+  // Filter vouchers that match the pattern JTE* + today's date
   const todayVouchers = vouchers.filter(v => {
     if (!v.voucherNo) return false;
     return v.voucherNo.includes(dateStr) && v.voucherNo.startsWith('JTE');
   });
   
-  if (todayVouchers.length === 0) {
-    return `JTE1${dateStr}`;
+  // Generate sequence number
+  let nextSequence = 1;
+  
+  if (todayVouchers.length > 0) {
+    const sequences = todayVouchers.map(v => {
+      const match = v.voucherNo?.match(/JTE(\d)/);
+      return match ? parseInt(match[1]) : 0;
+    });
+    nextSequence = Math.max(...sequences, 0) + 1;
   }
   
-  // Extract sequence numbers and find the highest
-  const sequences = todayVouchers.map(v => {
-    const match = v.voucherNo?.match(/JTE(\d+)${dateStr}/);
-    return match ? parseInt(match[1]) : 0;
-  });
-  
-  const nextSequence = Math.max(...sequences) + 1;
-  
-  // Format: JTE + sequence (no padding) + date
   return `JTE${nextSequence}${dateStr}`;
 };
 
@@ -95,18 +53,16 @@ export const saveVoucher = (voucher: VoucherData): VoucherData => {
     voucher.id = generateId();
   }
   
-  // Ensure voucher has a number (for backwards compatibility)
+  // Ensure voucher has a number
   if (!voucher.voucherNo) {
     voucher.voucherNo = generateVoucherNumber();
   } else if (!voucher.voucherNo.startsWith('JTE')) {
-    // If existing voucher doesn't have JTE format, don't change it
-    // This preserves old vouchers while new ones use JTE format
     console.log('Voucher uses old format:', voucher.voucherNo);
   }
   
-  // Ensure booking status is set
+  // Ensure booking status is set (default to "book")
   if (!voucher.bookingStatus) {
-    voucher.bookingStatus = "reserve";
+    voucher.bookingStatus = "book";
   }
   
   // Add timestamps
@@ -119,10 +75,8 @@ export const saveVoucher = (voucher: VoucherData): VoucherData => {
   const existingIndex = vouchers.findIndex(v => v.id === voucher.id);
   
   if (existingIndex >= 0) {
-    // Update existing
     vouchers[existingIndex] = { ...vouchers[existingIndex], ...voucher };
   } else {
-    // Add new
     vouchers.push(voucher);
   }
   
@@ -130,7 +84,7 @@ export const saveVoucher = (voucher: VoucherData): VoucherData => {
   return voucher;
 };
 
-export const updateBookingStatus = (id: string, status: "reserve" | "book" | "amend"): boolean => {
+export const updateBookingStatus = (id: string, status: "cancel" | "book" | "amend"): boolean => {
   const vouchers = loadVouchers();
   const index = vouchers.findIndex(v => v.id === id);
   
@@ -197,7 +151,7 @@ export const parseVoucherNumber = (voucherNo: string): { prefix: string; sequenc
     return {
       prefix: 'JTE',
       sequence: parseInt(match[1]),
-      date: match[2] // DDMMYY format
+      date: match[2]
     };
   }
   return null;
