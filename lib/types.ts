@@ -81,3 +81,11 @@ export const defaultVoucherData: VoucherData = {
   customerName: undefined,
   bookingStatus: "book", // Default to reserve
 };
+
+// List of available agents for selection
+export const AGENTS_LIST = [
+  "Antony Waititu",
+  "Ian Iraya",
+  "Maureen Chepkoech",
+  "Dedan Kimathi"
+];

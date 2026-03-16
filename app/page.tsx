@@ -64,7 +64,9 @@ export default function VoucherGenerator() {
         year: "numeric",
       }),
       status: "active",
-      bookingStatus: "book", // Default to book instead of reserve
+      bookingStatus: "book",
+      agentName: "Antony Waititu", // Ensure default agent is set
+      signedName: "Antony Waititu", // Set signed name to match agent
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -98,7 +100,7 @@ export default function VoucherGenerator() {
     setIsEditing(false);
     toast({ 
       title: "New voucher started", 
-      description: `Voucher #${newVoucher.voucherNo} (ID: ${newVoucher.id?.slice(0, 8)}...)` 
+      description: `Voucher #${newVoucher.voucherNo} (Prepared by: ${newVoucher.agentName})` 
     });
   }, [initializeNewVoucher, toast]);
 
@@ -111,7 +113,7 @@ export default function VoucherGenerator() {
     setSearchResults([]);
     toast({ 
       title: "Voucher loaded for editing", 
-      description: `Voucher #${voucher.voucherNo} (ID: ${voucher.id?.slice(0, 8)}...) is ready to amend` 
+      description: `Voucher #${voucher.voucherNo} (Prepared by: ${voucher.agentName || "Unknown"})` 
     });
   }, [toast]);
 
@@ -161,6 +163,11 @@ export default function VoucherGenerator() {
     }
 
     try {
+      // Ensure signedName matches agentName if not set
+      if (!data.signedName && data.agentName) {
+        data.signedName = data.agentName;
+      }
+
       const dataToSave = {
         ...data,
         updatedAt: new Date().toISOString()
@@ -172,7 +179,7 @@ export default function VoucherGenerator() {
       setIsEditing(true);
       toast({
         title: isEditing ? "Voucher updated" : "Voucher saved",
-        description: `Voucher #${saved.voucherNo} (ID: ${saved.id?.slice(0, 8)}...)`,
+        description: `Voucher #${saved.voucherNo} (Prepared by: ${saved.agentName})`,
       });
     } catch (err) {
       toast({
@@ -319,26 +326,31 @@ export default function VoucherGenerator() {
                                 <p className="text-sm text-slate-600">
                                   {voucher.clients || "No client"} - {voucher.date}
                                 </p>
-                                <div className="flex gap-2 mt-1">
-                                  <span className={`text-xs px-2 py-0.5 rounded ${
-                                    voucher.status === "cancelled" 
-                                      ? "bg-red-100 text-red-800" 
-                                      : "bg-green-100 text-green-800"
-                                  }`}>
-                                    {voucher.status === "cancelled" ? "Cancelled" : "Active"}
-                                  </span>
-                                  <span className={`text-xs px-2 py-0.5 rounded ${
-                                    voucher.bookingStatus === "book" 
-                                      ? "bg-green-100 text-green-800"
-                                      : voucher.bookingStatus === "amend"
-                                      ? "bg-orange-100 text-orange-800"
-                                      : voucher.bookingStatus === "cancel"
-                                      ? "bg-red-100 text-red-800"
-                                      : "bg-gray-100 text-gray-800"
-                                  }`}>
-                                    {voucher.bookingStatus ? 
-                                      voucher.bookingStatus.charAt(0).toUpperCase() + voucher.bookingStatus.slice(1) 
-                                      : "Book"}
+                                <div className="flex flex-col gap-1 mt-1">
+                                  <div className="flex gap-2">
+                                    <span className={`text-xs px-2 py-0.5 rounded ${
+                                      voucher.status === "cancelled" 
+                                        ? "bg-red-100 text-red-800" 
+                                        : "bg-green-100 text-green-800"
+                                    }`}>
+                                      {voucher.status === "cancelled" ? "Cancelled" : "Active"}
+                                    </span>
+                                    <span className={`text-xs px-2 py-0.5 rounded ${
+                                      voucher.bookingStatus === "book" 
+                                        ? "bg-green-100 text-green-800"
+                                        : voucher.bookingStatus === "amend"
+                                        ? "bg-orange-100 text-orange-800"
+                                        : voucher.bookingStatus === "cancel"
+                                        ? "bg-red-100 text-red-800"
+                                        : "bg-gray-100 text-gray-800"
+                                    }`}>
+                                      {voucher.bookingStatus ? 
+                                        voucher.bookingStatus.charAt(0).toUpperCase() + voucher.bookingStatus.slice(1) 
+                                        : "Book"}
+                                    </span>
+                                  </div>
+                                  <span className="text-xs text-gray-500">
+                                    Agent: {voucher.agentName || "Unknown"}
                                   </span>
                                 </div>
                               </div>
@@ -419,6 +431,7 @@ export default function VoucherGenerator() {
               <div className="text-sm text-slate-500 flex gap-4">
                 <span>Voucher #: <span className="font-mono bg-slate-100 px-2 py-1 rounded">{data.voucherNo}</span></span>
                 <span>ID: <span className="font-mono bg-slate-100 px-2 py-1 rounded">{currentId.slice(0, 8)}...</span></span>
+                <span>Agent: <span className="font-mono bg-slate-100 px-2 py-1 rounded">{data.agentName || "Antony Waititu"}</span></span>
               </div>
               <div className="flex gap-2">
                 <span className={`text-xs px-2 py-1 rounded-full ${
@@ -508,19 +521,22 @@ export default function VoucherGenerator() {
                           data.bookingStatus.charAt(0).toUpperCase() + data.bookingStatus.slice(1) 
                           : "Book"}
                       </span>
+                      <span className="text-xs text-gray-500">
+                        Agent: {data.agentName || "Antony Waititu"}
+                      </span>
                     </div>
                   )}
                 </div>
                 <div className="p-6 overflow-auto max-h-[70vh]">
                   <VoucherPreview data={data} />
-
-                  
                 </div>
-                
               </Card>
-
-              <VoucherList />
             </div>
+          </div>
+
+          {/* Voucher List Section - Moved outside the grid for better layout */}
+          <div className="mt-8">
+            <VoucherList onSelectVoucher={handleAmend} />
           </div>
         </div>
       </main>

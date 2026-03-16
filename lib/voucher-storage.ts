@@ -65,6 +65,16 @@ export const saveVoucher = (voucher: VoucherData): VoucherData => {
     voucher.bookingStatus = "book";
   }
   
+  // Ensure agent name is set
+  if (!voucher.agentName) {
+    voucher.agentName = "Antony Waititu";
+  }
+  
+  // Auto-fill signedName from agentName if not set
+  if (!voucher.signedName && voucher.agentName) {
+    voucher.signedName = voucher.agentName;
+  }
+  
   // Add timestamps
   const now = new Date().toISOString();
   if (!voucher.createdAt) {

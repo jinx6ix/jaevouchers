@@ -337,6 +337,7 @@ export default function VoucherPDF({ data }: Props) {
         </View>
 
         {/* Signature */}
+        {/* Signature */}
         <View style={styles.signatureBlock}>
           <View style={styles.signatureRow}>
             <Text style={styles.signatureLabel}>Signed</Text>

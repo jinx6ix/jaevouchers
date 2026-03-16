@@ -1,8 +1,15 @@
 "use client";
 
-import { VoucherData } from "@/lib/types";
+import { VoucherData, AGENTS_LIST } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Props {
   data: VoucherData;
@@ -12,28 +19,37 @@ interface Props {
 }
 
 export default function VoucherForm({ data, onChange, onReset, disabled }: Props) {
+  const [showExtraBed, setShowExtraBed] = useState(false);
+  
   const totalRooms = (data.singles || 0) + (data.twins || 0) + (data.doubles || 0) + (data.triples || 0);
-  const prevChildrenRef = useRef<number | string | undefined>(data.children);
 
-  // Check if children field has a value - with proper dependency check to prevent infinite loop
+  // Check if children field has a value
   useEffect(() => {
     const hasChildren = data.children && parseInt(data.children.toString()) > 0;
-    const prevHasChildren = prevChildrenRef.current && parseInt(prevChildrenRef.current.toString()) > 0;
+    setShowExtraBed(!!hasChildren);
+  }, [data.children]);
+
+  // Handle extra bed reset in a separate effect
+  useEffect(() => {
+    const hasChildren = data.children && parseInt(data.children.toString()) > 0;
+    const extraBedValue = typeof data.extraBed === 'string' ? parseInt(data.extraBed) || 0 : data.extraBed || 0;
     
-    // Only update extraBed if we're transitioning from having children to not having children
-    if (!hasChildren && prevHasChildren) {
+    if (!hasChildren && extraBedValue > 0) {
       onChange("extraBed", 0);
     }
-    
-    // Update the ref to current value
-    prevChildrenRef.current = data.children;
-  }, [data.children, onChange]); // Only depend on data.children
+  }, [data.children, data.extraBed, onChange]);
 
   const handleNumberChange = (field: keyof VoucherData, value: string) => {
     const numValue = value === "" ? 0 : parseInt(value);
     if (!isNaN(numValue)) {
       onChange(field, numValue);
     }
+  };
+
+  // Helper function to get numeric value for display
+  const getNumericValue = (value: string | number | undefined): number => {
+    if (value === undefined || value === "") return 0;
+    return typeof value === 'string' ? parseInt(value) || 0 : value;
   };
 
   return (
@@ -105,7 +121,7 @@ export default function VoucherForm({ data, onChange, onReset, disabled }: Props
             title="No. of Adults"
             type="number"
             min="0"
-            value={data.adults || 0}
+            value={getNumericValue(data.adults)}
             onChange={(e) => handleNumberChange("adults", e.target.value)}
             className="w-full border rounded px-3 py-2"
             disabled={disabled}
@@ -117,7 +133,7 @@ export default function VoucherForm({ data, onChange, onReset, disabled }: Props
             title="No. of Children"
             type="number"
             min="0"
-            value={data.children || 0}
+            value={getNumericValue(data.children)}
             onChange={(e) => handleNumberChange("children", e.target.value)}
             className="w-full border rounded px-3 py-2"
             disabled={disabled}
@@ -152,11 +168,36 @@ export default function VoucherForm({ data, onChange, onReset, disabled }: Props
             title="Number of Nights"
             type="number"
             min="0"
-            value={data.nights || 0}
+            value={getNumericValue(data.nights)}
             onChange={(e) => handleNumberChange("nights", e.target.value)}
             className="w-full border rounded px-3 py-2"
             disabled={disabled}
           />
+        </div>
+
+        {/* Agent Name Selection */}
+        <div className="col-span-2">
+          <label className="block text-sm font-medium mb-1">Prepared By (Agent)</label>
+          <Select
+            value={data.agentName || "Antony Waititu"}
+            onValueChange={(value) => {
+              onChange("agentName", value);
+              // Also update signedName to match agent name
+              onChange("signedName", value);
+            }}
+            disabled={disabled}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select agent" />
+            </SelectTrigger>
+            <SelectContent>
+              {AGENTS_LIST.map((agent) => (
+                <SelectItem key={agent} value={agent}>
+                  {agent}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -176,7 +217,7 @@ export default function VoucherForm({ data, onChange, onReset, disabled }: Props
               title="Singles"
               type="number"
               min="0"
-              value={data.singles || 0}
+              value={getNumericValue(data.singles)}
               onChange={(e) => handleNumberChange("singles", e.target.value)}
               className="w-full border rounded px-4 py-3 text-center text-xl font-semibold"
               disabled={disabled}
@@ -188,7 +229,7 @@ export default function VoucherForm({ data, onChange, onReset, disabled }: Props
               title="Twins"
               type="number"
               min="0"
-              value={data.twins || 0}
+              value={getNumericValue(data.twins)}
               onChange={(e) => handleNumberChange("twins", e.target.value)}
               className="w-full border rounded px-4 py-3 text-center text-xl font-semibold"
               disabled={disabled}
@@ -200,7 +241,7 @@ export default function VoucherForm({ data, onChange, onReset, disabled }: Props
               title="Doubles"
               type="number"
               min="0"
-              value={data.doubles || 0}
+              value={getNumericValue(data.doubles)}
               onChange={(e) => handleNumberChange("doubles", e.target.value)}
               className="w-full border rounded px-4 py-3 text-center text-xl font-semibold"
               disabled={disabled}
@@ -212,7 +253,7 @@ export default function VoucherForm({ data, onChange, onReset, disabled }: Props
               title="Triples"
               type="number"
               min="0"
-              value={data.triples || 0}
+              value={getNumericValue(data.triples)}
               onChange={(e) => handleNumberChange("triples", e.target.value)}
               className="w-full border rounded px-4 py-3 text-center text-xl font-semibold"
               disabled={disabled}
@@ -221,27 +262,27 @@ export default function VoucherForm({ data, onChange, onReset, disabled }: Props
         </div>
 
         {/* EXTRA BED - Conditionally shown when children > 0 */}
-        {data.children && parseInt(data.children.toString()) > 0 && (
-          <div className="mt-4 p-4 bg-black-50 rounded-lg border border-black-200">
+        {showExtraBed && (
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-red-600">
-                Extra Bed {data.children ? `(for ${data.children} child${parseInt(data.children.toString()) > 1 ? 'ren' : ''})` : ''}
+              <label className="block text-sm font-medium text-blue-700">
+                Extra Bed {data.children ? `(for ${getNumericValue(data.children)} child${getNumericValue(data.children) > 1 ? 'ren' : ''})` : ''}
               </label>
-              <span className="text-xs text-red-600 font-medium">Optional</span>
+              <span className="text-xs text-blue-600 font-medium">Optional</span>
             </div>
             <input
               title="Extra Bed"
               type="number"
               min="0"
-              max={parseInt(data.children.toString()) || 0}
-              value={data.extraBed || 0}
+              max={getNumericValue(data.children)}
+              value={getNumericValue(data.extraBed)}
               onChange={(e) => handleNumberChange("extraBed", e.target.value)}
-              className="w-full border border-red-300 rounded px-4 py-3 text-center text-xl font-semibold bg-white"
+              className="w-full border border-blue-300 rounded px-4 py-3 text-center text-xl font-semibold bg-white"
               placeholder="Number of extra beds"
               disabled={disabled}
             />
             <p className="text-xs text-blue-600 mt-2">
-              ⓘ Extra beds are available for children. Maximum {data.children || 0} bed(s).
+              ⓘ Extra beds are available for children. Maximum {getNumericValue(data.children)} bed(s).
             </p>
           </div>
         )}

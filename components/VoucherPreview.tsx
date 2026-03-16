@@ -270,6 +270,7 @@ export default function VoucherPreview({ data }: Props) {
       </div>
 
       {/* Signature block */}
+      {/* Signature block */}
       <div
         style={{
           position: "absolute",
