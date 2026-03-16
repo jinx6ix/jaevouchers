@@ -41,7 +41,7 @@ export interface VoucherData {
   createdAt?: string;
   updatedAt?: string;
 
-  bookingStatus?: "reserve" | "book" | "amend";
+  bookingStatus?: "cancel" | "book" | "amend"; // Only cancel, book, and amend options
 }
 
 export const defaultVoucherData: VoucherData = {
@@ -79,5 +79,5 @@ export const defaultVoucherData: VoucherData = {
   createdAt: undefined,
   updatedAt: undefined,
   customerName: undefined,
-  bookingStatus: "reserve", // Default to reserve
+  bookingStatus: "book", // Default to reserve
 };

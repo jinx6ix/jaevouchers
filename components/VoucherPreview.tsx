@@ -2,7 +2,6 @@ import { VoucherData } from "@/lib/types";
 
 const red = "#c00";
 const orange = "#ff7a00";
-// const blue = "#0066cc"; // Removed as we don't need it anymore
 
 interface Props {
   data: VoucherData;
@@ -16,9 +15,10 @@ export default function VoucherPreview({ data }: Props) {
         return "Please Book";
       case "amend":
         return "Please Amend";
-      case "reserve":
+      case "cancel":
+        return "Please Cancel";
       default:
-        return "Please Reserve";
+        return "Please Book"; // Default to book
     }
   };
 
@@ -29,9 +29,10 @@ export default function VoucherPreview({ data }: Props) {
         return "#008000"; // Green for book
       case "amend":
         return "#FFA500"; // Orange for amend
-      case "reserve":
+      case "cancel":
+        return "#FF0000"; // Red for cancel
       default:
-        return "#000"; // Black for reserve
+        return "#008000"; // Green for default
     }
   };
 
@@ -238,8 +239,8 @@ export default function VoucherPreview({ data }: Props) {
         <div>Name: {data.signedName || data.agentName || "Antony Waititu"}</div>
       </div>
 
-      {/* Status badge for booking status */}
-      {data.bookingStatus && data.bookingStatus !== "reserve" && (
+      {/* Status badge for booking status - only show for non-default statuses */}
+      {data.bookingStatus && data.bookingStatus !== "book" && (
         <div
           style={{
             position: "absolute",
@@ -249,12 +250,12 @@ export default function VoucherPreview({ data }: Props) {
             borderRadius: "4px",
             fontSize: "11px",
             fontWeight: "bold",
-            backgroundColor: data.bookingStatus === "book" ? "#4CAF50" : "#FFA500",
+            backgroundColor: data.bookingStatus === "cancel" ? "#FF0000" : "#FFA500",
             color: "white",
             textTransform: "uppercase",
           }}
         >
-          {data.bookingStatus === "book" ? "BOOKED" : "AMENDED"}
+          {data.bookingStatus === "cancel" ? "CANCELLED" : "AMENDED"}
         </div>
       )}
     </div>

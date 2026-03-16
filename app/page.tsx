@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Download, Loader2, Printer, Plus, Pencil, Ban, Search } from "lucide-react";
 import { pdf } from "@react-pdf/renderer";
 import { saveAs } from "file-saver";
@@ -44,14 +44,14 @@ export default function VoucherGenerator() {
   const previewRef = useRef<HTMLDivElement>(null);
 
   // Generate a unique ID for new vouchers
-  const generateUniqueId = (): string => {
+  const generateUniqueId = useCallback((): string => {
     const timestamp = Date.now().toString(36);
     const randomStr = Math.random().toString(36).substring(2, 10);
     return `${timestamp}-${randomStr}`;
-  };
+  }, []);
 
   // Initialize new voucher with unique ID and voucher number
-  const initializeNewVoucher = (): VoucherData => {
+  const initializeNewVoucher = useCallback((): VoucherData => {
     const newVoucherNumber = generateVoucherNumber();
     return {
       ...defaultVoucherData,
@@ -63,11 +63,11 @@ export default function VoucherGenerator() {
         year: "numeric",
       }),
       status: "active",
-      bookingStatus: "reserve",
+      bookingStatus: "book", // Default to book instead of reserve
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-  };
+  }, [generateUniqueId]);
 
   useEffect(() => {
     const vouchers = loadVouchers();
@@ -83,14 +83,14 @@ export default function VoucherGenerator() {
     }
   }, []);
 
-  const update = <K extends keyof VoucherData>(
+  const update = useCallback(<K extends keyof VoucherData>(
     field: K,
     value: VoucherData[K]
   ) => {
     setData((prev) => ({ ...prev, [field]: value, updatedAt: new Date().toISOString() }));
-  };
+  }, []);
 
-  const handleNew = () => {
+  const handleNew = useCallback(() => {
     const newVoucher = initializeNewVoucher();
     setData(newVoucher);
     setCurrentId(newVoucher.id!);
@@ -99,9 +99,9 @@ export default function VoucherGenerator() {
       title: "New voucher started", 
       description: `Voucher #${newVoucher.voucherNo} (ID: ${newVoucher.id?.slice(0, 8)}...)` 
     });
-  };
+  }, [initializeNewVoucher, toast]);
 
-  const handleAmend = (voucher: VoucherData) => {
+  const handleAmend = useCallback((voucher: VoucherData) => {
     setData(voucher);
     setCurrentId(voucher.id ?? null);
     setIsEditing(true);
@@ -112,9 +112,9 @@ export default function VoucherGenerator() {
       title: "Voucher loaded for editing", 
       description: `Voucher #${voucher.voucherNo} (ID: ${voucher.id?.slice(0, 8)}...) is ready to amend` 
     });
-  };
+  }, [toast]);
 
-  const handleSearchVoucher = () => {
+  const handleSearchVoucher = useCallback(() => {
     if (!searchVoucherNo.trim()) {
       toast({ 
         title: "Please enter a voucher number", 
@@ -136,9 +136,9 @@ export default function VoucherGenerator() {
         description: `No voucher matching "${searchVoucherNo}"` 
       });
     }
-  };
+  }, [searchVoucherNo, toast]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!data.voucherNo?.trim()) {
       toast({ title: "Voucher number is required", variant: "destructive" });
       return;
@@ -180,9 +180,9 @@ export default function VoucherGenerator() {
         variant: "destructive",
       });
     }
-  };
+  }, [data, currentId, isEditing, generateUniqueId, toast]);
 
-  const handleBookingStatusChange = (status: "reserve" | "book" | "amend") => {
+  const handleBookingStatusChange = useCallback((status: "cancel" | "book" | "amend") => {
     setData(prev => ({ ...prev, bookingStatus: status, updatedAt: new Date().toISOString() }));
     
     if (currentId) {
@@ -192,9 +192,9 @@ export default function VoucherGenerator() {
         description: `Voucher #${data.voucherNo} is now ${status === "book" ? "confirmed" : status}`
       });
     }
-  };
+  }, [currentId, data.voucherNo, toast]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     if (!currentId) {
       toast({ 
         title: "No voucher selected", 
@@ -215,9 +215,9 @@ export default function VoucherGenerator() {
     } else {
       toast({ title: "Could not cancel voucher", variant: "destructive" });
     }
-  };
+  }, [currentId, data.voucherNo, toast]);
 
-  const handleDownload = async () => {
+  const handleDownload = useCallback(async () => {
     setDownloading(true);
     try {
       const blob = await pdf(<VoucherPDF data={data} />).toBlob();
@@ -233,11 +233,11 @@ export default function VoucherGenerator() {
     } finally {
       setDownloading(false);
     }
-  };
+  }, [data, toast]);
 
-  const handlePrint = () => {
+  const handlePrint = useCallback(() => {
     window.print();
-  };
+  }, []);
 
   const isCancelled = data.status === "cancelled";
 
@@ -331,11 +331,13 @@ export default function VoucherGenerator() {
                                       ? "bg-green-100 text-green-800"
                                       : voucher.bookingStatus === "amend"
                                       ? "bg-orange-100 text-orange-800"
-                                      : "bg-blue-100 text-blue-800"
+                                      : voucher.bookingStatus === "cancel"
+                                      ? "bg-red-100 text-red-800"
+                                      : "bg-gray-100 text-gray-800"
                                   }`}>
                                     {voucher.bookingStatus ? 
                                       voucher.bookingStatus.charAt(0).toUpperCase() + voucher.bookingStatus.slice(1) 
-                                      : "Reserve"}
+                                      : "Book"}
                                   </span>
                                 </div>
                               </div>
@@ -367,14 +369,6 @@ export default function VoucherGenerator() {
             {isEditing && !isCancelled && (
               <div className="flex gap-2 ml-2">
                 <Button
-                  variant={data.bookingStatus === "reserve" ? "default" : "outline"}
-                  onClick={() => handleBookingStatusChange("reserve")}
-                  className={data.bookingStatus === "reserve" ? "bg-blue-600 hover:bg-blue-700" : ""}
-                  size="sm"
-                >
-                  Reserve
-                </Button>
-                <Button
                   variant={data.bookingStatus === "book" ? "default" : "outline"}
                   onClick={() => handleBookingStatusChange("book")}
                   className={data.bookingStatus === "book" ? "bg-green-600 hover:bg-green-700" : ""}
@@ -389,6 +383,14 @@ export default function VoucherGenerator() {
                   size="sm"
                 >
                   Amend
+                </Button>
+                <Button
+                  variant={data.bookingStatus === "cancel" ? "default" : "outline"}
+                  onClick={() => handleBookingStatusChange("cancel")}
+                  className={data.bookingStatus === "cancel" ? "bg-red-600 hover:bg-red-700" : ""}
+                  size="sm"
+                >
+                  Cancel
                 </Button>
               </div>
             )}
@@ -430,11 +432,13 @@ export default function VoucherGenerator() {
                     ? "bg-green-100 text-green-800"
                     : data.bookingStatus === "amend"
                     ? "bg-orange-100 text-orange-800"
-                    : "bg-blue-100 text-blue-800"
+                    : data.bookingStatus === "cancel"
+                    ? "bg-red-100 text-red-800"
+                    : "bg-gray-100 text-gray-800"
                 }`}>
                   {data.bookingStatus ? 
                     data.bookingStatus.charAt(0).toUpperCase() + data.bookingStatus.slice(1) 
-                    : "Reserve"}
+                    : "Book"}
                 </span>
               </div>
             </div>
@@ -495,11 +499,13 @@ export default function VoucherGenerator() {
                           ? "bg-green-100 text-green-800"
                           : data.bookingStatus === "amend"
                           ? "bg-orange-100 text-orange-800"
-                          : "bg-blue-100 text-blue-800"
+                          : data.bookingStatus === "cancel"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-gray-100 text-gray-800"
                       }`}>
                         Status: {data.bookingStatus ? 
                           data.bookingStatus.charAt(0).toUpperCase() + data.bookingStatus.slice(1) 
-                          : "Reserve"}
+                          : "Book"}
                       </span>
                     </div>
                   )}

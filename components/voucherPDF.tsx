@@ -99,7 +99,6 @@ const styles = StyleSheet.create({
   },
   extraBedLabel: {
     fontWeight: 700,
-    color: "#ff7a00",
     width: 60,
   },
   extraBedValue: {
@@ -189,9 +188,10 @@ export default function VoucherPDF({ data }: Props) {
         return "Please Book";
       case "amend":
         return "Please Amend";
-      case "reserve":
+      case "cancel":
+        return "Please Cancel";
       default:
-        return "Please Reserve";
+        return "Please Book";
     }
   };
 
@@ -202,8 +202,10 @@ export default function VoucherPDF({ data }: Props) {
         return "#008000";
       case "amend":
         return "#FFA500";
+      case "cancel":
+        return "#FF0000";
       default:
-        return "#ff7a00";
+        return "#008000";
     }
   };
 
@@ -222,12 +224,12 @@ export default function VoucherPDF({ data }: Props) {
           <Image style={styles.logo} src="/logos/right-logo.png" />
         </View>
 
-        {/* Status Badge */}
-        {data.bookingStatus && data.bookingStatus !== "reserve" && (
+        {/* Status Badge - only show for non-book statuses */}
+        {data.bookingStatus && data.bookingStatus !== "book" && (
           <View style={[styles.statusBadge, { 
-            backgroundColor: data.bookingStatus === "book" ? "#4CAF50" : "#FFA500" 
+            backgroundColor: data.bookingStatus === "cancel" ? "#FF0000" : "#FFA500" 
           }]}>
-            <Text>{data.bookingStatus === "book" ? "BOOKED" : "AMENDED"}</Text>
+            <Text>{data.bookingStatus === "cancel" ? "CANCELLED" : "AMENDED"}</Text>
           </View>
         )}
 
@@ -294,12 +296,12 @@ export default function VoucherPDF({ data }: Props) {
             <Text style={styles.roomValue}>{data.triples || ""}</Text>
           </View>
           
-          {/* Extra Bed - conditionally shown with same styling as room types */}
+          {/* Extra Bed - conditionally shown */}
           {hasChildren && hasExtraBed && (
             <View style={styles.extraBedSection}>
               <View style={styles.extraBedRow}>
-                <Text style={styles.extraBedLabel}>EXTRA BED:</Text>
-                <Text style={styles.extraBedValue}>{extraBedCount}</Text>
+                <Text style={styles.roomLabel}>EXTRA BED:</Text>
+                <Text style={styles.roomValue}>{extraBedCount}</Text>
                 <Text style={styles.extraBedNote}>
                   (for {childrenCount} child{childrenCount > 1 ? 'ren' : ''})
                 </Text>
