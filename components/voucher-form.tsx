@@ -2,7 +2,7 @@
 
 import { VoucherData } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 
 interface Props {
   data: VoucherData;
@@ -12,20 +12,22 @@ interface Props {
 }
 
 export default function VoucherForm({ data, onChange, onReset, disabled }: Props) {
-  const [showExtraBed, setShowExtraBed] = useState(false);
-  
   const totalRooms = (data.singles || 0) + (data.twins || 0) + (data.doubles || 0) + (data.triples || 0);
+  const prevChildrenRef = useRef<number | string | undefined>(data.children);
 
-  // Check if children field has a value
+  // Check if children field has a value - with proper dependency check to prevent infinite loop
   useEffect(() => {
     const hasChildren = data.children && parseInt(data.children.toString()) > 0;
-    setShowExtraBed(!!hasChildren);
+    const prevHasChildren = prevChildrenRef.current && parseInt(prevChildrenRef.current.toString()) > 0;
     
-    // Reset extra bed if no children
-    if (!hasChildren) {
+    // Only update extraBed if we're transitioning from having children to not having children
+    if (!hasChildren && prevHasChildren) {
       onChange("extraBed", 0);
     }
-  }, [data.children, onChange]);
+    
+    // Update the ref to current value
+    prevChildrenRef.current = data.children;
+  }, [data.children, onChange]); // Only depend on data.children
 
   const handleNumberChange = (field: keyof VoucherData, value: string) => {
     const numValue = value === "" ? 0 : parseInt(value);
@@ -219,7 +221,7 @@ export default function VoucherForm({ data, onChange, onReset, disabled }: Props
         </div>
 
         {/* EXTRA BED - Conditionally shown when children > 0 */}
-        {showExtraBed && (
+        {data.children && parseInt(data.children.toString()) > 0 && (
           <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-blue-700">
@@ -231,7 +233,7 @@ export default function VoucherForm({ data, onChange, onReset, disabled }: Props
               title="Extra Bed"
               type="number"
               min="0"
-              max={data.children || 0}
+              max={parseInt(data.children.toString()) || 0}
               value={data.extraBed || 0}
               onChange={(e) => handleNumberChange("extraBed", e.target.value)}
               className="w-full border border-blue-300 rounded px-4 py-3 text-center text-xl font-semibold bg-white"
