@@ -68,12 +68,23 @@ export default function VoucherList({ onSelectVoucher }: Props) {
     }
   };
 
-  const filteredVouchers = vouchers.filter(v => 
-    v.voucherNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.clients?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.hotelName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.agentName?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Helper function to safely convert to string for search
+  const safeToString = (value: any): string => {
+    if (value === null || value === undefined) return "";
+    return String(value).toLowerCase();
+  };
+
+  const filteredVouchers = vouchers.filter(v => {
+    const searchLower = searchTerm.toLowerCase();
+    
+    // Safely convert each field to string for comparison
+    return (
+      safeToString(v.voucherNo).includes(searchLower) ||
+      safeToString(v.clients).includes(searchLower) ||
+      safeToString(v.hotelName).includes(searchLower) ||
+      safeToString(v.agentName).includes(searchLower)
+    );
+  });
 
   return (
     <>
@@ -196,7 +207,7 @@ export default function VoucherList({ onSelectVoucher }: Props) {
 
       {/* View Voucher Details Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Voucher Details - #{selectedVoucher?.voucherNo}</DialogTitle>
           </DialogHeader>
