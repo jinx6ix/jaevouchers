@@ -11,24 +11,80 @@ const generateId = (): string => {
   return `${timestamp}-${randomStr}${randomStr2}`;
 };
 
-// Generate a unique voucher number in format V-YYYYMMDD-XXXX
+// Generate a unique voucher number in format JTE + date (DDMMYY) + sequence
+// Example: JTE1050626 (JTE + 1 + 050626)
 export const generateVoucherNumber = (): string => {
   const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
+  
+  // Format date as DDMMYY (e.g., 050626 for 5th June 2026)
   const day = String(date.getDate()).padStart(2, '0');
-  const dateStr = `${year}${month}${day}`;
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = String(date.getFullYear()).slice(-2); // Get last 2 digits of year
+  const dateStr = `${day}${month}${year}`; // DDMMYY format
   
   // Get existing vouchers to determine the next sequence number
   const vouchers = loadVouchers();
-  const todayVouchers = vouchers.filter(v => 
-    v.voucherNo?.startsWith(`V-${dateStr}`)
-  );
   
-  // Generate sequence number (padded to 4 digits)
-  const sequence = String(todayVouchers.length + 1).padStart(4, '0');
+  // Filter vouchers that match the pattern JTE* + today's date
+  // This regex matches JTE followed by any digits and then today's date
+  const todayVouchers = vouchers.filter(v => {
+    if (!v.voucherNo) return false;
+    // Check if voucher number contains today's date and starts with JTE
+    return v.voucherNo.includes(dateStr) && v.voucherNo.startsWith('JTE');
+  });
   
-  return `V-${dateStr}-${sequence}`;
+  // Generate sequence number (single digit for now, but could be expanded)
+  // The sequence is the first digit after JTE
+  let nextSequence = 1;
+  
+  if (todayVouchers.length > 0) {
+    // Find the highest sequence number used today
+    const sequences = todayVouchers.map(v => {
+      const match = v.voucherNo?.match(/JTE(\d)/);
+      return match ? parseInt(match[1]) : 0;
+    });
+    nextSequence = Math.max(...sequences, 0) + 1;
+  }
+  
+  // Format: JTE + sequence (1 digit) + date (DDMMYY)
+  // Example: JTE1050626 (JTE + 1 + 050626)
+  return `JTE${nextSequence}${dateStr}`;
+};
+
+// Alternative version if you want the sequence to always be 1 digit
+// If you want to support multi-digit sequences in the future, use this:
+export const generateVoucherNumberMultiDigit = (): string => {
+  const date = new Date();
+  
+  // Format date as DDMMYY
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = String(date.getFullYear()).slice(-2);
+  const dateStr = `${day}${month}${year}`;
+  
+  // Get existing vouchers
+  const vouchers = loadVouchers();
+  
+  // Filter vouchers for today
+  const todayVouchers = vouchers.filter(v => {
+    if (!v.voucherNo) return false;
+    return v.voucherNo.includes(dateStr) && v.voucherNo.startsWith('JTE');
+  });
+  
+  if (todayVouchers.length === 0) {
+    return `JTE1${dateStr}`;
+  }
+  
+  // Extract sequence numbers and find the highest
+  const sequences = todayVouchers.map(v => {
+    const match = v.voucherNo?.match(/JTE(\d+)${dateStr}/);
+    return match ? parseInt(match[1]) : 0;
+  });
+  
+  const nextSequence = Math.max(...sequences) + 1;
+  
+  // Format: JTE + sequence (no padding) + date
+  return `JTE${nextSequence}${dateStr}`;
 };
 
 export const saveVoucher = (voucher: VoucherData): VoucherData => {
@@ -42,6 +98,10 @@ export const saveVoucher = (voucher: VoucherData): VoucherData => {
   // Ensure voucher has a number (for backwards compatibility)
   if (!voucher.voucherNo) {
     voucher.voucherNo = generateVoucherNumber();
+  } else if (!voucher.voucherNo.startsWith('JTE')) {
+    // If existing voucher doesn't have JTE format, don't change it
+    // This preserves old vouchers while new ones use JTE format
+    console.log('Voucher uses old format:', voucher.voucherNo);
   }
   
   // Ensure booking status is set
@@ -128,4 +188,31 @@ export const deleteVoucher = (id: string): boolean => {
   }
   
   return false;
+};
+
+// Helper function to parse voucher number
+export const parseVoucherNumber = (voucherNo: string): { prefix: string; sequence: number; date: string } | null => {
+  const match = voucherNo.match(/^JTE(\d+)(\d{6})$/);
+  if (match) {
+    return {
+      prefix: 'JTE',
+      sequence: parseInt(match[1]),
+      date: match[2] // DDMMYY format
+    };
+  }
+  return null;
+};
+
+// Helper function to get today's voucher count
+export const getTodayVoucherCount = (): number => {
+  const vouchers = loadVouchers();
+  const today = new Date();
+  const day = String(today.getDate()).padStart(2, '0');
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const year = String(today.getFullYear()).slice(-2);
+  const todayDateStr = `${day}${month}${year}`;
+  
+  return vouchers.filter(v => 
+    v.voucherNo?.includes(todayDateStr) && v.voucherNo?.startsWith('JTE')
+  ).length;
 };
