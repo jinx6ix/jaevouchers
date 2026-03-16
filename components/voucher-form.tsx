@@ -222,12 +222,12 @@ export default function VoucherForm({ data, onChange, onReset, disabled }: Props
 
         {/* EXTRA BED - Conditionally shown when children > 0 */}
         {data.children && parseInt(data.children.toString()) > 0 && (
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="mt-4 p-4 bg-black-50 rounded-lg border border-black-200">
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-blue-700">
+              <label className="block text-sm font-medium text-red-600">
                 Extra Bed {data.children ? `(for ${data.children} child${parseInt(data.children.toString()) > 1 ? 'ren' : ''})` : ''}
               </label>
-              <span className="text-xs text-blue-600 font-medium">Optional</span>
+              <span className="text-xs text-red-600 font-medium">Optional</span>
             </div>
             <input
               title="Extra Bed"
@@ -236,7 +236,7 @@ export default function VoucherForm({ data, onChange, onReset, disabled }: Props
               max={parseInt(data.children.toString()) || 0}
               value={data.extraBed || 0}
               onChange={(e) => handleNumberChange("extraBed", e.target.value)}
-              className="w-full border border-blue-300 rounded px-4 py-3 text-center text-xl font-semibold bg-white"
+              className="w-full border border-red-300 rounded px-4 py-3 text-center text-xl font-semibold bg-white"
               placeholder="Number of extra beds"
               disabled={disabled}
             />

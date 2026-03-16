@@ -2,7 +2,7 @@ import { VoucherData } from "@/lib/types";
 
 const red = "#c00";
 const orange = "#ff7a00";
-const blue = "#0066cc";
+// const blue = "#0066cc"; // Removed as we don't need it anymore
 
 interface Props {
   data: VoucherData;
@@ -38,6 +38,15 @@ export default function VoucherPreview({ data }: Props) {
   // Check if extra bed should be shown
   const hasChildren = data.children && parseInt(data.children.toString()) > 0;
   const hasExtraBed = data.extraBed && parseInt(data.extraBed.toString()) > 0;
+
+  // Helper to safely convert to number
+  const toNumber = (val: string | number | undefined): number => {
+    if (val === undefined || val === "") return 0;
+    return typeof val === 'string' ? parseInt(val) || 0 : val;
+  };
+
+  const childrenCount = toNumber(data.children);
+  const extraBedCount = toNumber(data.extraBed);
 
   return (
     <div
@@ -164,13 +173,14 @@ export default function VoucherPreview({ data }: Props) {
         <div>
           TRIPLES: <span style={{ color: red }}>{data.triples || ""}</span>
         </div>
-        {/* Extra Bed - conditionally shown */}
+        
+        {/* Extra Bed - conditionally shown with same red color as room types */}
         {hasChildren && hasExtraBed && (
           <div style={{ marginTop: "8px", borderTop: "1px dashed #ccc", paddingTop: "4px" }}>
-            <span style={{ fontWeight: "bold", color: blue }}>EXTRA BED: </span>
-            <span style={{ color: blue, fontWeight: "bold" }}>{data.extraBed}</span>
+            <span style={{ fontWeight: "bold" }}>EXTRA BED: </span>
+            <span style={{ color: red, fontWeight: "bold" }}>{extraBedCount}</span>
             <span style={{ fontSize: "11px", marginLeft: "4px", color: "#666" }}>
-              (for {data.children} child{parseInt(data.children.toString()) > 1 ? 'ren' : ''})
+              (for {childrenCount} child{childrenCount > 1 ? 'ren' : ''})
             </span>
           </div>
         )}

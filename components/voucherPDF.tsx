@@ -73,20 +73,39 @@ const styles = StyleSheet.create({
   },
   roomsSection: { position: "absolute", top: 330, left: 260 },
 
+  roomRowItem: {
+    flexDirection: "row",
+    marginBottom: 2,
+  },
+  roomLabel: {
+    fontWeight: 700,
+    width: 60,
+  },
+  roomValue: {
+    color: "#ff7a00",
+    fontWeight: "bold",
+  },
+
   extraBedSection: {
     marginTop: 8,
     paddingTop: 4,
     borderTopWidth: 1,
-    borderTopColor: "#ccc",
+    borderTopColor: "#ff7a00",
     borderTopStyle: "dashed",
   },
-  extraBedText: {
-    color: "#0066cc",
-    fontWeight: "bold",
+  extraBedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  extraBedLabel: {
+    fontWeight: 700,
+    color: "#ff7a00",
+    width: 60,
   },
   extraBedValue: {
-    color: "#0066cc",
+    color: "#ff7a00",
     fontWeight: "bold",
+    marginRight: 4,
   },
   extraBedNote: {
     fontSize: 9,
@@ -95,8 +114,47 @@ const styles = StyleSheet.create({
   },
 
   checkinBlock: { position: "absolute", top: 430, left: 40 },
+  checkinRow: {
+    flexDirection: "row",
+    marginBottom: 2,
+  },
+  checkinLabel: {
+    fontWeight: 700,
+    width: 100,
+  },
+  checkinValue: {
+    color: "#ff7a00",
+    fontWeight: "bold",
+  },
+
   remarksBlock: { position: "absolute", top: 520, left: 40, right: 40 },
+  remarksRow: {
+    flexDirection: "row",
+    marginBottom: 2,
+  },
+  remarksLabel: {
+    fontWeight: 700,
+    width: 70,
+  },
+  remarksValue: {
+    color: "#ff7a00",
+    fontWeight: "bold",
+    flex: 1,
+  },
+
   signatureBlock: { position: "absolute", top: 620, left: 40 },
+  signatureRow: {
+    flexDirection: "row",
+    marginBottom: 2,
+  },
+  signatureLabel: {
+    fontWeight: 700,
+    width: 50,
+  },
+  signatureValue: {
+    color: "#ff7a00",
+    fontWeight: "bold",
+  },
 
   statusBadge: {
     position: "absolute",
@@ -110,7 +168,7 @@ const styles = StyleSheet.create({
   },
 
   label: { fontWeight: 700 },
-  value: { color: "#c00" },
+  value: { color: "#ff7a00", fontWeight: "bold" },
 });
 
 interface Props {
@@ -118,6 +176,12 @@ interface Props {
 }
 
 export default function VoucherPDF({ data }: Props) {
+  // Helper function to safely convert to number
+  const toNumber = (val: string | number | undefined): number => {
+    if (val === undefined || val === "") return 0;
+    return typeof val === 'string' ? parseInt(val) || 0 : val;
+  };
+
   // Get booking text based on status
   const getBookingText = () => {
     switch (data.bookingStatus) {
@@ -139,13 +203,15 @@ export default function VoucherPDF({ data }: Props) {
       case "amend":
         return "#FFA500";
       default:
-        return "#000";
+        return "#ff7a00";
     }
   };
 
   // Check if extra bed should be shown
-  const hasChildren = data.children && parseInt(data.children.toString()) > 0;
-  const hasExtraBed = data.extraBed && parseInt(data.extraBed.toString()) > 0;
+  const hasChildren = toNumber(data.children) > 0;
+  const hasExtraBed = toNumber(data.extraBed) > 0;
+  const childrenCount = toNumber(data.children);
+  const extraBedCount = toNumber(data.extraBed);
 
   return (
     <Document>
@@ -208,57 +274,81 @@ export default function VoucherPDF({ data }: Props) {
 
         {/* Room Breakdown */}
         <View style={styles.roomsSection}>
-          <Text>
-            TWINS: <Text style={styles.value}>{data.twins || ""}</Text>
-          </Text>
-          <Text>
-            DOUBLES: <Text style={styles.value}>{data.doubles || ""}</Text>
-          </Text>
-          <Text>
-            SINGLES: <Text style={styles.value}>{data.singles || ""}</Text>
-          </Text>
-          <Text>
-            TRIPLES: <Text style={styles.value}>{data.triples || ""}</Text>
-          </Text>
+          <View style={styles.roomRowItem}>
+            <Text style={styles.roomLabel}>TWINS:</Text>
+            <Text style={styles.roomValue}>{data.twins || ""}</Text>
+          </View>
           
-          {/* Extra Bed - conditionally shown */}
+          <View style={styles.roomRowItem}>
+            <Text style={styles.roomLabel}>DOUBLES:</Text>
+            <Text style={styles.roomValue}>{data.doubles || ""}</Text>
+          </View>
+          
+          <View style={styles.roomRowItem}>
+            <Text style={styles.roomLabel}>SINGLES:</Text>
+            <Text style={styles.roomValue}>{data.singles || ""}</Text>
+          </View>
+          
+          <View style={styles.roomRowItem}>
+            <Text style={styles.roomLabel}>TRIPLES:</Text>
+            <Text style={styles.roomValue}>{data.triples || ""}</Text>
+          </View>
+          
+          {/* Extra Bed - conditionally shown with same styling as room types */}
           {hasChildren && hasExtraBed && (
             <View style={styles.extraBedSection}>
-              <Text>
-                <Text style={styles.extraBedText}>EXTRA BED: </Text>
-                <Text style={styles.extraBedValue}>{data.extraBed}</Text>
+              <View style={styles.extraBedRow}>
+                <Text style={styles.extraBedLabel}>EXTRA BED:</Text>
+                <Text style={styles.extraBedValue}>{extraBedCount}</Text>
                 <Text style={styles.extraBedNote}>
-                  {' '}(for {data.children} child{parseInt(data.children.toString()) > 1 ? 'ren' : ''})
+                  (for {childrenCount} child{childrenCount > 1 ? 'ren' : ''})
                 </Text>
-              </Text>
+              </View>
             </View>
           )}
         </View>
 
         {/* Check-in / Check-out / Nights */}
         <View style={styles.checkinBlock}>
-          <Text>
-            Check in: <Text style={styles.value}>{data.checkIn}</Text>
-          </Text>
-          <Text>
-            Check out: <Text style={styles.value}>{data.checkOut}</Text>
-          </Text>
-          <Text>
-            Number of Nights: <Text style={styles.value}>{data.nights}</Text>
-          </Text>
+          <View style={styles.checkinRow}>
+            <Text style={styles.checkinLabel}>Check in:</Text>
+            <Text style={styles.checkinValue}>{data.checkIn}</Text>
+          </View>
+          
+          <View style={styles.checkinRow}>
+            <Text style={styles.checkinLabel}>Check out:</Text>
+            <Text style={styles.checkinValue}>{data.checkOut}</Text>
+          </View>
+          
+          <View style={styles.checkinRow}>
+            <Text style={styles.checkinLabel}>Number of Nights:</Text>
+            <Text style={styles.checkinValue}>{data.nights}</Text>
+          </View>
         </View>
 
         {/* Remarks */}
         <View style={styles.remarksBlock}>
-          <Text style={styles.label}>Remarks: </Text>
-          <Text style={styles.value}>{data.remarks}</Text>
+          <View style={styles.remarksRow}>
+            <Text style={styles.remarksLabel}>Remarks:</Text>
+            <Text style={styles.remarksValue}>{data.remarks}</Text>
+          </View>
         </View>
 
         {/* Signature */}
         <View style={styles.signatureBlock}>
-          <Text>Signed</Text>
-          <Text>For: {data.signedFor || "Jae Travel Expeditions"}</Text>
-          <Text>Name: {data.signedName || data.agentName || "Antony Waititu"}</Text>
+          <View style={styles.signatureRow}>
+            <Text style={styles.signatureLabel}>Signed</Text>
+          </View>
+          
+          <View style={styles.signatureRow}>
+            <Text style={styles.signatureLabel}>For:</Text>
+            <Text style={styles.signatureValue}>{data.signedFor || "Jae Travel Expeditions"}</Text>
+          </View>
+          
+          <View style={styles.signatureRow}>
+            <Text style={styles.signatureLabel}>Name:</Text>
+            <Text style={styles.signatureValue}>{data.signedName || data.agentName || "Antony Waititu"}</Text>
+          </View>
         </View>
       </Page>
     </Document>
