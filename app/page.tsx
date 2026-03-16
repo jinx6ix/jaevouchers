@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import VoucherList from "@/components/VoucherList";
 
 export default function VoucherGenerator() {
   const [data, setData] = useState<VoucherData>(defaultVoucherData);
@@ -512,8 +513,13 @@ export default function VoucherGenerator() {
                 </div>
                 <div className="p-6 overflow-auto max-h-[70vh]">
                   <VoucherPreview data={data} />
+
+                  
                 </div>
+                
               </Card>
+
+              <VoucherList />
             </div>
           </div>
         </div>
