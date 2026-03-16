@@ -40,6 +40,17 @@ const styles = StyleSheet.create({
 
   date: { position: "absolute", top: 145, left: 40 },
 
+  statusBadge: {
+    position: "absolute",
+    top: 140,
+    right: 40,
+    padding: "4 8",
+    borderRadius: 4,
+    fontSize: 10,
+    fontWeight: "bold",
+    color: "white",
+  },
+
   hotelRow: { position: "absolute", top: 175, left: 40, flexDirection: "row" },
   roomRow: { position: "absolute", top: 200, left: 40, flexDirection: "row" },
 
@@ -155,17 +166,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-  statusBadge: {
-    position: "absolute",
-    top: 100,
-    right: 40,
-    padding: "4 8",
-    borderRadius: 4,
-    fontSize: 10,
-    fontWeight: "bold",
-    color: "white",
-  },
-
   label: { fontWeight: 700 },
   value: { color: "#ff7a00", fontWeight: "bold" },
 });
@@ -224,6 +224,12 @@ export default function VoucherPDF({ data }: Props) {
           <Image style={styles.logo} src="/logos/right-logo.png" />
         </View>
 
+        {/* Voucher Number */}
+        <Text style={styles.voucherNo}>Voucher No: {data.voucherNo}</Text>
+
+        {/* Date */}
+        <Text style={styles.date}>Date: {data.date}</Text>
+
         {/* Status Badge - only show for non-book statuses */}
         {data.bookingStatus && data.bookingStatus !== "book" && (
           <View style={[styles.statusBadge, { 
@@ -232,12 +238,6 @@ export default function VoucherPDF({ data }: Props) {
             <Text>{data.bookingStatus === "cancel" ? "CANCELLED" : "AMENDED"}</Text>
           </View>
         )}
-
-        {/* Voucher Number */}
-        <Text style={styles.voucherNo}>Voucher No: {data.voucherNo}</Text>
-
-        {/* Date */}
-        <Text style={styles.date}>Date: {data.date}</Text>
 
         {/* Hotel Name */}
         <View style={styles.hotelRow}>
