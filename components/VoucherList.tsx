@@ -14,7 +14,7 @@ import {
   DialogFooter 
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Search, Edit, Eye } from "lucide-react";
+import { Search, Edit, Eye, Loader2 } from "lucide-react";
 
 interface Props {
   onSelectVoucher?: (voucher: VoucherData) => void;
@@ -26,15 +26,23 @@ export default function VoucherList({ onSelectVoucher }: Props) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedVoucher, setSelectedVoucher] = useState<VoucherData | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const refreshList = () => {
-    const data = loadVouchers();
-    // Sort by most recent first
-    const sorted = data.sort((a, b) => {
-      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
-    });
-    setVouchers(sorted);
-    console.log("Loaded vouchers:", sorted);
+  const refreshList = async () => {
+    setIsLoading(true);
+    try {
+      const data = await loadVouchers();
+      // Sort by most recent first
+      const sorted = data.sort((a, b) => {
+        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      });
+      setVouchers(sorted);
+      console.log("Loaded vouchers:", sorted);
+    } catch (error) {
+      console.error("Error loading vouchers:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -77,7 +85,6 @@ export default function VoucherList({ onSelectVoucher }: Props) {
   const filteredVouchers = vouchers.filter(v => {
     const searchLower = searchTerm.toLowerCase();
     
-    // Safely convert each field to string for comparison
     return (
       safeToString(v.voucherNo).includes(searchLower) ||
       safeToString(v.clients).includes(searchLower) ||
@@ -92,8 +99,13 @@ export default function VoucherList({ onSelectVoucher }: Props) {
         onClick={() => setOpen(true)} 
         variant="outline" 
         className="w-full"
+        disabled={isLoading}
       >
-        <Eye className="mr-2 h-4 w-4" />
+        {isLoading ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Eye className="mr-2 h-4 w-4" />
+        )}
         View Saved Vouchers ({vouchers.length})
       </Button>
 
@@ -115,90 +127,102 @@ export default function VoucherList({ onSelectVoucher }: Props) {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-8"
+              disabled={isLoading}
             />
           </div>
 
-          {/* Voucher List */}
-          <div className="flex-1 overflow-y-auto space-y-3 pr-2">
-            {filteredVouchers.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">No vouchers found</p>
-            ) : (
-              filteredVouchers.map((v) => (
-                <Card 
-                  key={v.id} 
-                  className={`p-4 hover:shadow-md transition-shadow ${
-                    v.status === "cancelled" ? "opacity-60 bg-red-50" : "cursor-pointer hover:border-blue-300"
-                  }`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div 
-                      className="flex-1"
-                      onClick={() => v.status !== "cancelled" && handleSelectVoucher(v)}
-                    >
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="font-bold text-lg">#{v.voucherNo}</span>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          v.status === "cancelled" 
-                            ? "bg-red-200 text-red-800" 
-                            : "bg-green-100 text-green-800"
-                        }`}>
-                          {v.status === "cancelled" ? "CANCELLED" : "ACTIVE"}
-                        </span>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          v.bookingStatus === "book" 
-                            ? "bg-green-100 text-green-800"
-                            : v.bookingStatus === "amend"
-                            ? "bg-orange-100 text-orange-800"
-                            : v.bookingStatus === "cancel"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}>
-                          {v.bookingStatus?.toUpperCase()}
-                        </span>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div><span className="text-gray-500">Client:</span> {v.clients || "—"}</div>
-                        <div><span className="text-gray-500">Hotel:</span> {v.hotelName || "—"}</div>
-                        <div><span className="text-gray-500">Agent:</span> {v.agentName || "—"}</div>
-                        <div><span className="text-gray-500">Date:</span> {v.date || "—"}</div>
-                      </div>
-                      
-                      <div className="text-xs text-gray-400 mt-2">
-                        Created: {v.createdAt ? new Date(v.createdAt).toLocaleString() : "Unknown"}
-                      </div>
-                    </div>
+          {/* Loading State */}
+          {isLoading && (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+            </div>
+          )}
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-2 ml-4">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleViewVoucher(v)}
-                        title="View details"
+          {/* Voucher List */}
+          {!isLoading && (
+            <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+              {filteredVouchers.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">No vouchers found</p>
+              ) : (
+                filteredVouchers.map((v) => (
+                  <Card 
+                    key={v.id} 
+                    className={`p-4 hover:shadow-md transition-shadow ${
+                      v.status === "cancelled" ? "opacity-60 bg-red-50" : "cursor-pointer hover:border-blue-300"
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div 
+                        className="flex-1"
+                        onClick={() => v.status !== "cancelled" && handleSelectVoucher(v)}
                       >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      {v.status !== "cancelled" && (
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className="font-bold text-lg">#{v.voucherNo}</span>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            v.status === "cancelled" 
+                              ? "bg-red-200 text-red-800" 
+                              : "bg-green-100 text-green-800"
+                          }`}>
+                            {v.status === "cancelled" ? "CANCELLED" : "ACTIVE"}
+                          </span>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            v.bookingStatus === "book" 
+                              ? "bg-green-100 text-green-800"
+                              : v.bookingStatus === "amend"
+                              ? "bg-orange-100 text-orange-800"
+                              : v.bookingStatus === "cancel"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}>
+                            {v.bookingStatus?.toUpperCase()}
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div><span className="text-gray-500">Client:</span> {v.clients || "—"}</div>
+                          <div><span className="text-gray-500">Hotel:</span> {v.hotelName || "—"}</div>
+                          <div><span className="text-gray-500">Agent:</span> {v.agentName || "—"}</div>
+                          <div><span className="text-gray-500">Date:</span> {v.date || "—"}</div>
+                        </div>
+                        
+                        <div className="text-xs text-gray-400 mt-2">
+                          Created: {v.createdAt ? new Date(v.createdAt).toLocaleString() : "Unknown"}
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2 ml-4">
                         <Button
                           size="sm"
-                          variant="default"
-                          onClick={() => handleSelectVoucher(v)}
-                          title="Edit voucher"
-                          className="bg-blue-600 hover:bg-blue-700"
+                          variant="outline"
+                          onClick={() => handleViewVoucher(v)}
+                          title="View details"
+                          disabled={isLoading}
                         >
-                          <Edit className="h-4 w-4" />
+                          <Eye className="h-4 w-4" />
                         </Button>
-                      )}
+                        {v.status !== "cancelled" && (
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={() => handleSelectVoucher(v)}
+                            title="Edit voucher"
+                            className="bg-blue-600 hover:bg-blue-700"
+                            disabled={isLoading}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </Card>
-              ))
-            )}
-          </div>
+                  </Card>
+                ))
+              )}
+            </div>
+          )}
 
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setOpen(false)}>
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
               Close
             </Button>
           </DialogFooter>

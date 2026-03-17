@@ -40,6 +40,7 @@ export default function VoucherGenerator() {
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
   const [searchVoucherNo, setSearchVoucherNo] = useState("");
   const [searchResults, setSearchResults] = useState<VoucherData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const { toast } = useToast();
   const previewRef = useRef<HTMLDivElement>(null);
@@ -52,8 +53,8 @@ export default function VoucherGenerator() {
   }, []);
 
   // Initialize new voucher with unique ID and voucher number
-  const initializeNewVoucher = useCallback((): VoucherData => {
-    const newVoucherNumber = generateVoucherNumber();
+  const initializeNewVoucher = useCallback(async (): Promise<VoucherData> => {
+    const newVoucherNumber = await generateVoucherNumber();
     return {
       ...defaultVoucherData,
       id: generateUniqueId(),
@@ -65,25 +66,41 @@ export default function VoucherGenerator() {
       }),
       status: "active",
       bookingStatus: "book",
-      agentName: "Antony Waititu", // Ensure default agent is set
-      signedName: "Antony Waititu", // Set signed name to match agent
+      agentName: "Antony Waititu",
+      signedName: "Antony Waititu",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
   }, [generateUniqueId]);
 
   useEffect(() => {
-    const vouchers = loadVouchers();
-    if (vouchers.length > 0) {
-      const last = vouchers[vouchers.length - 1];
-      if (last.status !== "cancelled") {
-        setData(last);
-        setCurrentId(last.id ?? null);
-        setIsEditing(!!last.id);
+    const loadInitialData = async () => {
+      setIsLoading(true);
+      try {
+        const vouchers = await loadVouchers();
+        if (vouchers.length > 0) {
+          const last = vouchers[vouchers.length - 1];
+          if (last.status !== "cancelled") {
+            setData(last);
+            setCurrentId(last.id ?? null);
+            setIsEditing(!!last.id);
+          }
+        } else {
+          await handleNew();
+        }
+      } catch (error) {
+        console.error("Error loading initial data:", error);
+        toast({
+          title: "Error loading data",
+          description: "Failed to load vouchers. Please refresh the page.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
-    } else {
-      handleNew();
-    }
+    };
+    
+    loadInitialData();
   }, []);
 
   const update = useCallback(<K extends keyof VoucherData>(
@@ -93,15 +110,26 @@ export default function VoucherGenerator() {
     setData((prev) => ({ ...prev, [field]: value, updatedAt: new Date().toISOString() }));
   }, []);
 
-  const handleNew = useCallback(() => {
-    const newVoucher = initializeNewVoucher();
-    setData(newVoucher);
-    setCurrentId(newVoucher.id!);
-    setIsEditing(false);
-    toast({ 
-      title: "New voucher started", 
-      description: `Voucher #${newVoucher.voucherNo} (Prepared by: ${newVoucher.agentName})` 
-    });
+  const handleNew = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const newVoucher = await initializeNewVoucher();
+      setData(newVoucher);
+      setCurrentId(newVoucher.id!);
+      setIsEditing(false);
+      toast({ 
+        title: "New voucher started", 
+        description: `Voucher #${newVoucher.voucherNo} (Prepared by: ${newVoucher.agentName})` 
+      });
+    } catch (error) {
+      toast({
+        title: "Error creating voucher",
+        description: "Failed to create new voucher. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }, [initializeNewVoucher, toast]);
 
   const handleAmend = useCallback((voucher: VoucherData) => {
@@ -117,7 +145,7 @@ export default function VoucherGenerator() {
     });
   }, [toast]);
 
-  const handleSearchVoucher = useCallback(() => {
+  const handleSearchVoucher = useCallback(async () => {
     if (!searchVoucherNo.trim()) {
       toast({ 
         title: "Please enter a voucher number", 
@@ -126,18 +154,29 @@ export default function VoucherGenerator() {
       return;
     }
 
-    const vouchers = loadVouchers();
-    const results = vouchers.filter(v => 
-      v.voucherNo?.toLowerCase().includes(searchVoucherNo.toLowerCase())
-    );
-    
-    setSearchResults(results);
-    
-    if (results.length === 0) {
-      toast({ 
-        title: "No vouchers found", 
-        description: `No voucher matching "${searchVoucherNo}"` 
+    setIsLoading(true);
+    try {
+      const vouchers = await loadVouchers();
+      const results = vouchers.filter(v => 
+        v.voucherNo?.toLowerCase().includes(searchVoucherNo.toLowerCase())
+      );
+      
+      setSearchResults(results);
+      
+      if (results.length === 0) {
+        toast({ 
+          title: "No vouchers found", 
+          description: `No voucher matching "${searchVoucherNo}"` 
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Search failed",
+        description: "Failed to search vouchers. Please try again.",
+        variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   }, [searchVoucherNo, toast]);
 
@@ -151,18 +190,21 @@ export default function VoucherGenerator() {
       data.id = generateUniqueId();
     }
   
-    const vouchers = loadVouchers();
-    const duplicate = vouchers.find(
-      v => v.voucherNo === data.voucherNo && v.id !== currentId
-    );
-  
-    if (duplicate) {
-      if (!confirm(`Voucher number ${data.voucherNo} is already used by another record.\n\nOverwrite number?`)) {
-        return;
-      }
-    }
-
+    setIsLoading(true);
     try {
+      // Check for duplicates
+      const vouchers = await loadVouchers();
+      const duplicate = vouchers.find(
+        v => v.voucherNo === data.voucherNo && v.id !== currentId
+      );
+    
+      if (duplicate) {
+        if (!confirm(`Voucher number ${data.voucherNo} is already used by another record.\n\nOverwrite number?`)) {
+          setIsLoading(false);
+          return;
+        }
+      }
+
       // Ensure signedName matches agentName if not set
       if (!data.signedName && data.agentName) {
         data.signedName = data.agentName;
@@ -173,7 +215,7 @@ export default function VoucherGenerator() {
         updatedAt: new Date().toISOString()
       };
 
-      const saved = saveVoucher(dataToSave);
+      const saved = await saveVoucher(dataToSave);
       setData(saved);
       setCurrentId(saved.id!);
       setIsEditing(true);
@@ -187,22 +229,43 @@ export default function VoucherGenerator() {
         description: String(err),
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   }, [data, currentId, isEditing, generateUniqueId, toast]);
 
-  const handleBookingStatusChange = useCallback((status: "cancel" | "book" | "amend") => {
+  const handleBookingStatusChange = useCallback(async (status: "cancel" | "book" | "amend") => {
     setData(prev => ({ ...prev, bookingStatus: status, updatedAt: new Date().toISOString() }));
     
     if (currentId) {
-      updateBookingStatus(currentId, status);
-      toast({ 
-        title: `Status updated to ${status.charAt(0).toUpperCase() + status.slice(1)}`, 
-        description: `Voucher #${data.voucherNo} is now ${status === "book" ? "confirmed" : status}`
-      });
+      setIsLoading(true);
+      try {
+        const success = await updateBookingStatus(currentId, status);
+        if (success) {
+          toast({ 
+            title: `Status updated to ${status.charAt(0).toUpperCase() + status.slice(1)}`, 
+            description: `Voucher #${data.voucherNo} is now ${status === "book" ? "confirmed" : status}`
+          });
+        } else {
+          toast({
+            title: "Status update failed",
+            description: "Failed to update status. Please try again.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        toast({
+          title: "Status update failed",
+          description: "An error occurred while updating status.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
   }, [currentId, data.voucherNo, toast]);
 
-  const handleCancel = useCallback(() => {
+  const handleCancel = useCallback(async () => {
     if (!currentId) {
       toast({ 
         title: "No voucher selected", 
@@ -214,14 +277,26 @@ export default function VoucherGenerator() {
     
     if (!confirm(`Are you sure you want to cancel voucher #${data.voucherNo}?`)) return;
 
-    if (cancelVoucher(currentId)) {
-      setData(prev => ({ ...prev, status: "cancelled" }));
-      toast({ 
-        title: "Voucher cancelled successfully", 
-        description: `Voucher #${data.voucherNo} has been cancelled` 
+    setIsLoading(true);
+    try {
+      const success = await cancelVoucher(currentId);
+      if (success) {
+        setData(prev => ({ ...prev, status: "cancelled" }));
+        toast({ 
+          title: "Voucher cancelled successfully", 
+          description: `Voucher #${data.voucherNo} has been cancelled` 
+        });
+      } else {
+        toast({ title: "Could not cancel voucher", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({
+        title: "Cancel failed",
+        description: "An error occurred while cancelling the voucher.",
+        variant: "destructive",
       });
-    } else {
-      toast({ title: "Could not cancel voucher", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
   }, [currentId, data.voucherNo, toast]);
 
@@ -275,14 +350,14 @@ export default function VoucherGenerator() {
           </h1>
 
           <div className="flex flex-wrap gap-3 mb-6">
-            <Button onClick={handleNew} variant="outline">
+            <Button onClick={handleNew} variant="outline" disabled={isLoading}>
               <Plus className="mr-2 h-4 w-4" />
               New Voucher
             </Button>
 
             <Dialog open={searchDialogOpen} onOpenChange={setSearchDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="bg-blue-50 hover:bg-blue-100">
+                <Button variant="outline" className="bg-blue-50 hover:bg-blue-100" disabled={isLoading}>
                   <Pencil className="mr-2 h-4 w-4" />
                   Amend Voucher
                 </Button>
@@ -301,9 +376,10 @@ export default function VoucherGenerator() {
                         value={searchVoucherNo}
                         onChange={(e) => setSearchVoucherNo(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSearchVoucher()}
+                        disabled={isLoading}
                       />
-                      <Button onClick={handleSearchVoucher}>
-                        <Search className="h-4 w-4" />
+                      <Button onClick={handleSearchVoucher} disabled={isLoading}>
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                       </Button>
                     </div>
                   </div>
@@ -366,10 +442,15 @@ export default function VoucherGenerator() {
 
             <Button
               onClick={handleSave}
-              disabled={isCancelled || downloading}
+              disabled={isCancelled || downloading || isLoading}
               className="bg-amber-600 hover:bg-amber-700"
             >
-              {isEditing ? (
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : isEditing ? (
                 <>
                   <Pencil className="mr-2 h-4 w-4" />
                   Update Voucher #{data.voucherNo}
@@ -386,6 +467,7 @@ export default function VoucherGenerator() {
                   onClick={() => handleBookingStatusChange("book")}
                   className={data.bookingStatus === "book" ? "bg-green-600 hover:bg-green-700" : ""}
                   size="sm"
+                  disabled={isLoading}
                 >
                   Book
                 </Button>
@@ -394,6 +476,7 @@ export default function VoucherGenerator() {
                   onClick={() => handleBookingStatusChange("amend")}
                   className={data.bookingStatus === "amend" ? "bg-orange-600 hover:bg-orange-700" : ""}
                   size="sm"
+                  disabled={isLoading}
                 >
                   Amend
                 </Button>
@@ -402,6 +485,7 @@ export default function VoucherGenerator() {
                   onClick={() => handleBookingStatusChange("cancel")}
                   className={data.bookingStatus === "cancel" ? "bg-red-600 hover:bg-red-700" : ""}
                   size="sm"
+                  disabled={isLoading}
                 >
                   Cancel
                 </Button>
@@ -412,7 +496,7 @@ export default function VoucherGenerator() {
               <Button
                 variant="destructive"
                 onClick={handleCancel}
-                disabled={downloading}
+                disabled={downloading || isLoading}
               >
                 <Ban className="mr-2 h-4 w-4" />
                 Cancel Voucher #{data.voucherNo}
@@ -465,7 +549,7 @@ export default function VoucherGenerator() {
                 data={data}
                 onChange={update}
                 onReset={handleNew}
-                disabled={isCancelled}
+                disabled={isCancelled || isLoading}
               />
             </Card>
 
@@ -476,7 +560,7 @@ export default function VoucherGenerator() {
                   <Button
                     onClick={handlePrint}
                     variant="secondary"
-                    disabled={downloading}
+                    disabled={downloading || isLoading}
                   >
                     <Printer className="mr-2 h-4 w-4" />
                     Print
@@ -484,7 +568,7 @@ export default function VoucherGenerator() {
 
                   <Button
                     onClick={handleDownload}
-                    disabled={downloading || isCancelled}
+                    disabled={downloading || isCancelled || isLoading}
                   >
                     {downloading ? (
                       <>
@@ -534,7 +618,7 @@ export default function VoucherGenerator() {
             </div>
           </div>
 
-          {/* Voucher List Section - Moved outside the grid for better layout */}
+          {/* Voucher List Section */}
           <div className="mt-8">
             <VoucherList onSelectVoucher={handleAmend} />
           </div>
