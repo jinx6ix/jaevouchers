@@ -52,7 +52,7 @@ export default function VoucherGenerator() {
     return `${timestamp}-${randomStr}`;
   }, []);
 
-  // Initialize new voucher with unique ID and voucher number added flight voucher generator
+  // Initialize new voucher with unique ID and voucher number
   const initializeNewVoucher = useCallback(async (): Promise<VoucherData> => {
     const newVoucherNumber = await generateVoucherNumber();
     return {
