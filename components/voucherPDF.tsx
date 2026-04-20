@@ -75,10 +75,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
 
-  bookText: { 
-    position: "absolute", 
-    top: 330, 
-    left: 40, 
+  bookText: {
+    position: "absolute",
+    top: 330,
+    left: 40,
     fontWeight: 700,
     fontSize: 12,
   },
@@ -168,6 +168,19 @@ const styles = StyleSheet.create({
 
   label: { fontWeight: 700 },
   value: { color: "#ff7a00", fontWeight: "bold" },
+
+  // Flight-specific
+  flightTypeBadge: {
+    position: "absolute",
+    top: 108,
+    left: 40,
+    right: 40,
+    textAlign: "center",
+    fontSize: 9,
+    color: "#0077cc",
+    fontWeight: 700,
+    letterSpacing: 2,
+  },
 });
 
 interface Props {
@@ -175,41 +188,30 @@ interface Props {
 }
 
 export default function VoucherPDF({ data }: Props) {
-  // Helper function to safely convert to number
   const toNumber = (val: string | number | undefined): number => {
     if (val === undefined || val === "") return 0;
     return typeof val === 'string' ? parseInt(val) || 0 : val;
   };
 
-  // Get booking text based on status
   const getBookingText = () => {
     switch (data.bookingStatus) {
-      case "book":
-        return "Please Book";
-      case "amend":
-        return "Please Amend";
-      case "cancel":
-        return "Please Cancel";
-      default:
-        return "Please Book";
+      case "book":   return "Please Book";
+      case "amend":  return "Please Amend";
+      case "cancel": return "Please Cancel";
+      default:       return "Please Book";
     }
   };
 
-  // Get booking color based on status
   const getBookingColor = () => {
     switch (data.bookingStatus) {
-      case "book":
-        return "#008000";
-      case "amend":
-        return "#FFA500";
-      case "cancel":
-        return "#FF0000";
-      default:
-        return "#008000";
+      case "book":   return "#008000";
+      case "amend":  return "#FFA500";
+      case "cancel": return "#FF0000";
+      default:       return "#008000";
     }
   };
 
-  // Check if extra bed should be shown
+  const isHotel = (data.voucherType ?? "hotel") === "hotel";
   const hasChildren = toNumber(data.children) > 0;
   const hasExtraBed = toNumber(data.extraBed) > 0;
   const childrenCount = toNumber(data.children);
@@ -224,31 +226,36 @@ export default function VoucherPDF({ data }: Props) {
           <Image style={styles.logo} src="/logos/right-logo.png" />
         </View>
 
+        {/* Flight type label */}
+        {!isHotel && (
+          <Text style={styles.flightTypeBadge}>✈  FLIGHT VOUCHER</Text>
+        )}
+
         {/* Voucher Number */}
         <Text style={styles.voucherNo}>Voucher No: {data.voucherNo}</Text>
 
         {/* Date */}
         <Text style={styles.date}>Date: {data.date}</Text>
 
-        {/* Status Badge - only show for non-book statuses */}
+        {/* Status Badge */}
         {data.bookingStatus && data.bookingStatus !== "book" && (
-          <View style={[styles.statusBadge, { 
-            backgroundColor: data.bookingStatus === "cancel" ? "#FF0000" : "#FFA500" 
+          <View style={[styles.statusBadge, {
+            backgroundColor: data.bookingStatus === "cancel" ? "#FF0000" : "#FFA500"
           }]}>
             <Text>{data.bookingStatus === "cancel" ? "CANCELLED" : "AMENDED"}</Text>
           </View>
         )}
 
-        {/* Hotel Name */}
+        {/* Hotel Name OR Flight Name */}
         <View style={styles.hotelRow}>
-          <Text style={styles.label}>Hotel Name: </Text>
-          <Text style={styles.value}>{data.hotelName}</Text>
+          <Text style={styles.label}>{isHotel ? "Hotel Name: " : "Flight Name: "}</Text>
+          <Text style={styles.value}>{isHotel ? data.hotelName : data.flightName}</Text>
         </View>
 
-        {/* Room Type */}
+        {/* Room Type OR Flight Schedule */}
         <View style={styles.roomRow}>
-          <Text style={styles.label}>Room Type : </Text>
-          <Text style={styles.value}>{data.roomType}</Text>
+          <Text style={styles.label}>{isHotel ? "Room Type : " : "Schedule   : "}</Text>
+          <Text style={styles.value}>{isHotel ? data.roomType : data.flightSchedule}</Text>
         </View>
 
         {/* Orange CLIENTS bar */}
@@ -269,61 +276,56 @@ export default function VoucherPDF({ data }: Props) {
           </View>
         </View>
 
-        {/* Dynamic Booking Text */}
+        {/* Booking Action Text */}
         <Text style={[styles.bookText, { color: getBookingColor() }]}>
           {getBookingText()}
         </Text>
 
-        {/* Room Breakdown */}
-        <View style={styles.roomsSection}>
-          <View style={styles.roomRowItem}>
-            <Text style={styles.roomLabel}>TWINS:</Text>
-            <Text style={styles.roomValue}>{data.twins || ""}</Text>
-          </View>
-          
-          <View style={styles.roomRowItem}>
-            <Text style={styles.roomLabel}>DOUBLES:</Text>
-            <Text style={styles.roomValue}>{data.doubles || ""}</Text>
-          </View>
-          
-          <View style={styles.roomRowItem}>
-            <Text style={styles.roomLabel}>SINGLES:</Text>
-            <Text style={styles.roomValue}>{data.singles || ""}</Text>
-          </View>
-          
-          <View style={styles.roomRowItem}>
-            <Text style={styles.roomLabel}>TRIPLES:</Text>
-            <Text style={styles.roomValue}>{data.triples || ""}</Text>
-          </View>
-          
-          {/* Extra Bed - conditionally shown */}
-          {hasChildren && hasExtraBed && (
-            <View style={styles.extraBedSection}>
-              <View style={styles.extraBedRow}>
-                <Text style={styles.roomLabel}>EXTRA BED:</Text>
-                <Text style={styles.roomValue}>{extraBedCount}</Text>
-                <Text style={styles.extraBedNote}>
-                  (for {childrenCount} child{childrenCount > 1 ? 'ren' : ''})
-                </Text>
-              </View>
+        {/* Room Breakdown — hotel only */}
+        {isHotel && (
+          <View style={styles.roomsSection}>
+            <View style={styles.roomRowItem}>
+              <Text style={styles.roomLabel}>TWINS:</Text>
+              <Text style={styles.roomValue}>{data.twins || ""}</Text>
             </View>
-          )}
-        </View>
+            <View style={styles.roomRowItem}>
+              <Text style={styles.roomLabel}>DOUBLES:</Text>
+              <Text style={styles.roomValue}>{data.doubles || ""}</Text>
+            </View>
+            <View style={styles.roomRowItem}>
+              <Text style={styles.roomLabel}>SINGLES:</Text>
+              <Text style={styles.roomValue}>{data.singles || ""}</Text>
+            </View>
+            <View style={styles.roomRowItem}>
+              <Text style={styles.roomLabel}>TRIPLES:</Text>
+              <Text style={styles.roomValue}>{data.triples || ""}</Text>
+            </View>
+            {hasChildren && hasExtraBed && (
+              <View style={styles.extraBedSection}>
+                <View style={styles.extraBedRow}>
+                  <Text style={styles.roomLabel}>EXTRA BED:</Text>
+                  <Text style={styles.roomValue}>{extraBedCount}</Text>
+                  <Text style={styles.extraBedNote}>
+                    (for {childrenCount} child{childrenCount > 1 ? 'ren' : ''})
+                  </Text>
+                </View>
+              </View>
+            )}
+          </View>
+        )}
 
-        {/* Check-in / Check-out / Nights */}
+        {/* Check-in / Check-out / Nights (or Departure / Return / Days) */}
         <View style={styles.checkinBlock}>
           <View style={styles.checkinRow}>
-            <Text style={styles.checkinLabel}>Check in:</Text>
+            <Text style={styles.checkinLabel}>{isHotel ? "Check in:" : "Departure:"}</Text>
             <Text style={styles.checkinValue}>{data.checkIn}</Text>
           </View>
-          
           <View style={styles.checkinRow}>
-            <Text style={styles.checkinLabel}>Check out:</Text>
+            <Text style={styles.checkinLabel}>{isHotel ? "Check out:" : "Return:"}</Text>
             <Text style={styles.checkinValue}>{data.checkOut}</Text>
           </View>
-          
           <View style={styles.checkinRow}>
-            <Text style={styles.checkinLabel}>Number of Nights:</Text>
+            <Text style={styles.checkinLabel}>{isHotel ? "Number of Nights:" : "Number of Days:"}</Text>
             <Text style={styles.checkinValue}>{data.nights}</Text>
           </View>
         </View>
@@ -337,17 +339,14 @@ export default function VoucherPDF({ data }: Props) {
         </View>
 
         {/* Signature */}
-        {/* Signature */}
         <View style={styles.signatureBlock}>
           <View style={styles.signatureRow}>
             <Text style={styles.signatureLabel}>Signed</Text>
           </View>
-          
           <View style={styles.signatureRow}>
             <Text style={styles.signatureLabel}>For:</Text>
             <Text style={styles.signatureValue}>{data.signedFor || "Jae Travel Expeditions"}</Text>
           </View>
-          
           <View style={styles.signatureRow}>
             <Text style={styles.signatureLabel}>Name:</Text>
             <Text style={styles.signatureValue}>{data.signedName || data.agentName || "Antony Waititu"}</Text>

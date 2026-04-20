@@ -1,28 +1,37 @@
 import { ReactNode } from "react";
 
+export type VoucherType = "hotel" | "flight";
+
 export interface VoucherData {
   customerName: ReactNode;
-  id?: string;                     // ← added for identification
-  status?: "draft" | "active" | "cancelled";  // ← added
+  id?: string;
+  status?: "draft" | "active" | "cancelled";
+
+  // Voucher type selector
+  voucherType?: VoucherType;
 
   // Static / auto-filled
   voucherNo: string;
   date: string;
   companyName: string;
 
-  // Hotel & Room info
+  // Hotel fields
   hotelName: string;
   roomType: string;
 
-  // Room breakdown
+  // Room breakdown (hotel only)
   singles: number;
   twins: number;
   doubles: number;
   triples: number;
-  extraBed?: number | string; // New field for extra bed
+  extraBed?: number | string;
+
+  // Flight fields
+  flightName: string;
+  flightSchedule: string;
 
   // Guest info
-  clients: ReactNode;              // can be string | JSX.Element
+  clients: ReactNode;
   adults: number;
   children: number;
 
@@ -37,15 +46,16 @@ export interface VoucherData {
   signedFor: string;
   signedName: string;
 
-  // Optional timestamps (nice to have)
+  // Optional timestamps
   createdAt?: string;
   updatedAt?: string;
 
-  bookingStatus?: "cancel" | "book" | "amend"; // Only cancel, book, and amend options
+  bookingStatus?: "cancel" | "book" | "amend";
 }
 
 export const defaultVoucherData: VoucherData = {
   status: "draft",
+  voucherType: "hotel",
   voucherNo: "",
   date: new Date().toLocaleDateString("en-GB", {
     day: "numeric",
@@ -62,10 +72,13 @@ export const defaultVoucherData: VoucherData = {
   doubles: 0,
   triples: 0,
 
+  flightName: "",
+  flightSchedule: "",
+
   clients: "",
   adults: 0,
   children: 0,
-  extraBed: 0, // Initialize extra bed as 0
+  extraBed: 0,
 
   checkIn: "",
   checkOut: "",
@@ -79,10 +92,9 @@ export const defaultVoucherData: VoucherData = {
   createdAt: undefined,
   updatedAt: undefined,
   customerName: undefined,
-  bookingStatus: "book", // Default to reserve
+  bookingStatus: "book",
 };
 
-// List of available agents for selection
 export const AGENTS_LIST = [
   "Antony Waititu",
   "Ian Iraya",

@@ -8,39 +8,29 @@ interface Props {
 }
 
 export default function VoucherPreview({ data }: Props) {
-  // Determine the text to display based on booking status
+  const isHotel = (data.voucherType ?? "hotel") === "hotel";
+
   const getBookingText = () => {
     switch (data.bookingStatus) {
-      case "book":
-        return "Please Book";
-      case "amend":
-        return "Please Amend";
-      case "cancel":
-        return "Please Cancel";
-      default:
-        return "Please Book";
+      case "book":   return "Please Book";
+      case "amend":  return "Please Amend";
+      case "cancel": return "Please Cancel";
+      default:       return "Please Book";
     }
   };
 
-  // Get color based on booking status
   const getBookingColor = () => {
     switch (data.bookingStatus) {
-      case "book":
-        return "#008000"; // Green for book
-      case "amend":
-        return "#FFA500"; // Orange for amend
-      case "cancel":
-        return "#FF0000"; // Red for cancel
-      default:
-        return "#008000";
+      case "book":   return "#008000";
+      case "amend":  return "#FFA500";
+      case "cancel": return "#FF0000";
+      default:       return "#008000";
     }
   };
 
-  // Check if extra bed should be shown
   const hasChildren = data.children && parseInt(data.children.toString()) > 0;
   const hasExtraBed = data.extraBed && parseInt(data.extraBed.toString()) > 0;
 
-  // Helper to safely convert to number
   const toNumber = (val: string | number | undefined): number => {
     if (val === undefined || val === "") return 0;
     return typeof val === 'string' ? parseInt(val) || 0 : val;
@@ -79,17 +69,29 @@ export default function VoucherPreview({ data }: Props) {
           alignItems: "center",
         }}
       >
-        <img 
-          src="/logos/left-logo.png" 
-          alt="Left Logo" 
-          style={{ width: "130px", height: "auto" }}
-        />
-        <img 
-          src="/logos/right-logo.png" 
-          alt="Right Logo" 
-          style={{ width: "130px", height: "auto" }}
-        />
+        <img src="/logos/left-logo.png" alt="Left Logo" style={{ width: "130px", height: "auto" }} />
+        <img src="/logos/right-logo.png" alt="Right Logo" style={{ width: "130px", height: "auto" }} />
       </div>
+
+      {/* Flight type label */}
+      {!isHotel && (
+        <div
+          style={{
+            position: "absolute",
+            top: "90px",
+            left: 0,
+            right: 0,
+            textAlign: "center",
+            fontSize: "10px",
+            color: "#0077cc",
+            fontWeight: "bold",
+            letterSpacing: "2px",
+            textTransform: "uppercase",
+          }}
+        >
+          ✈ &nbsp;Flight Voucher
+        </div>
+      )}
 
       {/* Voucher No - centered */}
       <div
@@ -101,6 +103,7 @@ export default function VoucherPreview({ data }: Props) {
           textAlign: "center",
           fontSize: 14,
           fontWeight: "bold",
+          marginTop: !isHotel ? "12px" : "0",
         }}
       >
         Voucher No: {data.voucherNo || ""}
@@ -111,7 +114,7 @@ export default function VoucherPreview({ data }: Props) {
         Date: {data.date || ""}
       </div>
 
-      {/* Status Badge - only show for non-book statuses */}
+      {/* Status Badge */}
       {data.bookingStatus && data.bookingStatus !== "book" && (
         <div
           style={{
@@ -131,13 +134,20 @@ export default function VoucherPreview({ data }: Props) {
         </div>
       )}
 
-      {/* Hotel & Room Type */}
+      {/* Hotel Name / Flight Name */}
       <div style={{ position: "absolute", top: "170px", left: "40px" }}>
-        Hotel Name: <span style={{ color: red }}>{data.hotelName || ""}</span>
+        {isHotel ? "Hotel Name" : "Flight Name"}:{" "}
+        <span style={{ color: red }}>
+          {isHotel ? data.hotelName || "" : data.flightName || ""}
+        </span>
       </div>
 
+      {/* Room Type / Flight Schedule */}
       <div style={{ position: "absolute", top: "195px", left: "40px" }}>
-        Room Type: <span style={{ color: red }}>{data.roomType || ""}</span>
+        {isHotel ? "Room Type" : "Schedule  "}:{" "}
+        <span style={{ color: red }}>
+          {isHotel ? data.roomType || "" : data.flightSchedule || ""}
+        </span>
       </div>
 
       {/* Clients - orange bar */}
@@ -183,12 +193,12 @@ export default function VoucherPreview({ data }: Props) {
         </div>
       </div>
 
-      {/* Dynamic booking instruction */}
-      <div 
-        style={{ 
-          position: "absolute", 
-          top: "340px", 
-          left: "40px", 
+      {/* Booking instruction */}
+      <div
+        style={{
+          position: "absolute",
+          top: "340px",
+          left: "40px",
           fontWeight: "bold",
           color: getBookingColor(),
           fontSize: 14,
@@ -197,39 +207,31 @@ export default function VoucherPreview({ data }: Props) {
         {getBookingText()}
       </div>
 
-      {/* Room Breakdown */}
-      <div
-        style={{
-          position: "absolute",
-          top: "340px",
-          left: "300px",
-          lineHeight: 1.6,
-        }}
-      >
-        <div>
-          TWINS: <span style={{ color: red }}>{data.twins || ""}</span>
+      {/* Room Breakdown — hotel only */}
+      {isHotel && (
+        <div
+          style={{
+            position: "absolute",
+            top: "340px",
+            left: "300px",
+            lineHeight: 1.6,
+          }}
+        >
+          <div>TWINS: <span style={{ color: red }}>{data.twins || ""}</span></div>
+          <div>DOUBLES: <span style={{ color: red }}>{data.doubles || ""}</span></div>
+          <div>SINGLES: <span style={{ color: red }}>{data.singles || ""}</span></div>
+          <div>TRIPLES: <span style={{ color: red }}>{data.triples || ""}</span></div>
+          {hasChildren && hasExtraBed && (
+            <div style={{ marginTop: "8px", borderTop: "1px dashed #ccc", paddingTop: "4px" }}>
+              <span style={{ fontWeight: "bold" }}>EXTRA BED: </span>
+              <span style={{ color: red, fontWeight: "bold" }}>{extraBedCount}</span>
+              <span style={{ fontSize: "11px", marginLeft: "4px", color: "#666" }}>
+                (for {childrenCount} child{childrenCount > 1 ? 'ren' : ''})
+              </span>
+            </div>
+          )}
         </div>
-        <div>
-          DOUBLES: <span style={{ color: red }}>{data.doubles || ""}</span>
-        </div>
-        <div>
-          SINGLES: <span style={{ color: red }}>{data.singles || ""}</span>
-        </div>
-        <div>
-          TRIPLES: <span style={{ color: red }}>{data.triples || ""}</span>
-        </div>
-        
-        {/* Extra Bed - conditionally shown with same red color as room types */}
-        {hasChildren && hasExtraBed && (
-          <div style={{ marginTop: "8px", borderTop: "1px dashed #ccc", paddingTop: "4px" }}>
-            <span style={{ fontWeight: "bold" }}>EXTRA BED: </span>
-            <span style={{ color: red, fontWeight: "bold" }}>{extraBedCount}</span>
-            <span style={{ fontSize: "11px", marginLeft: "4px", color: "#666" }}>
-              (for {childrenCount} child{childrenCount > 1 ? 'ren' : ''})
-            </span>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Check-in / Check-out / Nights */}
       <div
@@ -241,13 +243,15 @@ export default function VoucherPreview({ data }: Props) {
         }}
       >
         <div>
-          Check in: <span style={{ color: red }}>{data.checkIn || ""}</span>
+          {isHotel ? "Check in" : "Departure"}:{" "}
+          <span style={{ color: red }}>{data.checkIn || ""}</span>
         </div>
         <div>
-          Check out: <span style={{ color: red }}>{data.checkOut || ""}</span>
+          {isHotel ? "Check out" : "Return"}:{" "}
+          <span style={{ color: red }}>{data.checkOut || ""}</span>
         </div>
         <div>
-          Number of Nights:{" "}
+          {isHotel ? "Number of Nights" : "Number of Days"}:{" "}
           <span style={{ color: red }}>{data.nights || ""}</span>
         </div>
       </div>
@@ -269,7 +273,6 @@ export default function VoucherPreview({ data }: Props) {
         </span>
       </div>
 
-      {/* Signature block */}
       {/* Signature block */}
       <div
         style={{

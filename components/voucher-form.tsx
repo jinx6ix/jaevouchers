@@ -1,6 +1,6 @@
 "use client";
 
-import { VoucherData, AGENTS_LIST } from "@/lib/types";
+import { VoucherData, VoucherType, AGENTS_LIST } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import {
@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Hotel, Plane } from "lucide-react";
 
 interface Props {
   data: VoucherData;
@@ -20,20 +21,18 @@ interface Props {
 
 export default function VoucherForm({ data, onChange, onReset, disabled }: Props) {
   const [showExtraBed, setShowExtraBed] = useState(false);
-  
+
+  const isHotel = (data.voucherType ?? "hotel") === "hotel";
   const totalRooms = (data.singles || 0) + (data.twins || 0) + (data.doubles || 0) + (data.triples || 0);
 
-  // Check if children field has a value
   useEffect(() => {
     const hasChildren = data.children && parseInt(data.children.toString()) > 0;
     setShowExtraBed(!!hasChildren);
   }, [data.children]);
 
-  // Handle extra bed reset in a separate effect
   useEffect(() => {
     const hasChildren = data.children && parseInt(data.children.toString()) > 0;
     const extraBedValue = typeof data.extraBed === 'string' ? parseInt(data.extraBed) || 0 : data.extraBed || 0;
-    
     if (!hasChildren && extraBedValue > 0) {
       onChange("extraBed", 0);
     }
@@ -46,14 +45,51 @@ export default function VoucherForm({ data, onChange, onReset, disabled }: Props
     }
   };
 
-  // Helper function to get numeric value for display
   const getNumericValue = (value: string | number | undefined): number => {
     if (value === undefined || value === "") return 0;
     return typeof value === 'string' ? parseInt(value) || 0 : value;
   };
 
+  const handleTypeSwitch = (type: VoucherType) => {
+    onChange("voucherType", type);
+  };
+
   return (
     <div className="space-y-8">
+
+      {/* Voucher Type Toggle */}
+      <div>
+        <label className="block text-sm font-medium mb-2">Voucher Type</label>
+        <div className="flex rounded-lg border overflow-hidden">
+          <button
+            type="button"
+            onClick={() => handleTypeSwitch("hotel")}
+            disabled={disabled}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 text-sm font-medium transition-colors ${
+              isHotel
+                ? "bg-amber-600 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            <Hotel className="h-4 w-4" />
+            Hotel Voucher
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTypeSwitch("flight")}
+            disabled={disabled}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 text-sm font-medium transition-colors border-l ${
+              !isHotel
+                ? "bg-sky-600 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            <Plane className="h-4 w-4" />
+            Flight Voucher
+          </button>
+        </div>
+      </div>
+
       {/* Basic Info */}
       <div className="grid grid-cols-2 gap-6">
         <div>
@@ -79,29 +115,61 @@ export default function VoucherForm({ data, onChange, onReset, disabled }: Props
           />
         </div>
 
-        <div className="col-span-2">
-          <label className="block text-sm font-medium mb-1">Hotel Name</label>
-          <input
-            type="text"
-            value={data.hotelName || ""}
-            onChange={(e) => onChange("hotelName", e.target.value)}
-            className="w-full border rounded px-3 py-2"
-            placeholder="Lake Nakuru Lodge"
-            disabled={disabled}
-          />
-        </div>
+        {/* Hotel fields */}
+        {isHotel && (
+          <>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium mb-1">Hotel Name</label>
+              <input
+                type="text"
+                value={data.hotelName || ""}
+                onChange={(e) => onChange("hotelName", e.target.value)}
+                className="w-full border rounded px-3 py-2"
+                placeholder="Lake Nakuru Lodge"
+                disabled={disabled}
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium mb-1">Room Type (e.g. Standard Room FullBoard)</label>
+              <input
+                title="Room Type"
+                type="text"
+                value={data.roomType || ""}
+                onChange={(e) => onChange("roomType", e.target.value)}
+                className="w-full border rounded px-3 py-2"
+                disabled={disabled}
+              />
+            </div>
+          </>
+        )}
 
-        <div className="col-span-2">
-          <label className="block text-sm font-medium mb-1">Room Type (e.g. Standard Room FullBoard)</label>
-          <input
-            title="Room Type"
-            type="text"
-            value={data.roomType || ""}
-            onChange={(e) => onChange("roomType", e.target.value)}
-            className="w-full border rounded px-3 py-2"
-            disabled={disabled}
-          />
-        </div>
+        {/* Flight fields */}
+        {!isHotel && (
+          <>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium mb-1">Airline / Flight Name</label>
+              <input
+                type="text"
+                value={data.flightName || ""}
+                onChange={(e) => onChange("flightName", e.target.value)}
+                className="w-full border rounded px-3 py-2"
+                placeholder="Kenya Airways KQ 100"
+                disabled={disabled}
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium mb-1">Flight Schedule</label>
+              <input
+                type="text"
+                value={data.flightSchedule || ""}
+                onChange={(e) => onChange("flightSchedule", e.target.value)}
+                className="w-full border rounded px-3 py-2"
+                placeholder="Nairobi (NBO) → Mombasa (MBA) | Dep. 08:00 – Arr. 09:05"
+                disabled={disabled}
+              />
+            </div>
+          </>
+        )}
 
         <div className="col-span-2">
           <label className="block text-sm font-medium mb-1">Clients</label>
@@ -141,7 +209,7 @@ export default function VoucherForm({ data, onChange, onReset, disabled }: Props
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Check In</label>
+          <label className="block text-sm font-medium mb-1">{isHotel ? "Check In" : "Departure Date"}</label>
           <input
             type="text"
             value={data.checkIn || ""}
@@ -152,7 +220,7 @@ export default function VoucherForm({ data, onChange, onReset, disabled }: Props
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Check Out</label>
+          <label className="block text-sm font-medium mb-1">{isHotel ? "Check Out" : "Return Date"}</label>
           <input
             type="text"
             value={data.checkOut || ""}
@@ -163,9 +231,9 @@ export default function VoucherForm({ data, onChange, onReset, disabled }: Props
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Number of Nights</label>
+          <label className="block text-sm font-medium mb-1">{isHotel ? "Number of Nights" : "Number of Days"}</label>
           <input
-            title="Number of Nights"
+            title="Nights / Days"
             type="number"
             min="0"
             value={getNumericValue(data.nights)}
@@ -175,14 +243,13 @@ export default function VoucherForm({ data, onChange, onReset, disabled }: Props
           />
         </div>
 
-        {/* Agent Name Selection */}
+        {/* Agent */}
         <div className="col-span-2">
           <label className="block text-sm font-medium mb-1">Prepared By (Agent)</label>
           <Select
             value={data.agentName || "Antony Waititu"}
             onValueChange={(value) => {
               onChange("agentName", value);
-              // Also update signedName to match agent name
               onChange("signedName", value);
             }}
             disabled={disabled}
@@ -201,96 +268,97 @@ export default function VoucherForm({ data, onChange, onReset, disabled }: Props
         </div>
       </div>
 
-      {/* ROOM TYPES SECTION */}
-      <div className="border-t pt-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-lg">Room Types</h3>
-          <div className="text-sm font-medium text-gray-600">
-            Total Rooms: <span className="text-red-600 font-bold">{totalRooms}</span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium mb-1">Singles</label>
-            <input
-              title="Singles"
-              type="number"
-              min="0"
-              value={getNumericValue(data.singles)}
-              onChange={(e) => handleNumberChange("singles", e.target.value)}
-              className="w-full border rounded px-4 py-3 text-center text-xl font-semibold"
-              disabled={disabled}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Twins</label>
-            <input
-              title="Twins"
-              type="number"
-              min="0"
-              value={getNumericValue(data.twins)}
-              onChange={(e) => handleNumberChange("twins", e.target.value)}
-              className="w-full border rounded px-4 py-3 text-center text-xl font-semibold"
-              disabled={disabled}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Doubles</label>
-            <input
-              title="Doubles"
-              type="number"
-              min="0"
-              value={getNumericValue(data.doubles)}
-              onChange={(e) => handleNumberChange("doubles", e.target.value)}
-              className="w-full border rounded px-4 py-3 text-center text-xl font-semibold"
-              disabled={disabled}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Triples</label>
-            <input
-              title="Triples"
-              type="number"
-              min="0"
-              value={getNumericValue(data.triples)}
-              onChange={(e) => handleNumberChange("triples", e.target.value)}
-              className="w-full border rounded px-4 py-3 text-center text-xl font-semibold"
-              disabled={disabled}
-            />
-          </div>
-        </div>
-
-        {/* EXTRA BED - Conditionally shown when children > 0 */}
-        {showExtraBed && (
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-blue-700">
-                Extra Bed {data.children ? `(for ${getNumericValue(data.children)} child${getNumericValue(data.children) > 1 ? 'ren' : ''})` : ''}
-              </label>
-              <span className="text-xs text-blue-600 font-medium">Optional</span>
+      {/* ROOM TYPES — Hotel only */}
+      {isHotel && (
+        <div className="border-t pt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-lg">Room Types</h3>
+            <div className="text-sm font-medium text-gray-600">
+              Total Rooms: <span className="text-red-600 font-bold">{totalRooms}</span>
             </div>
-            <input
-              title="Extra Bed"
-              type="number"
-              min="0"
-              max={getNumericValue(data.children)}
-              value={getNumericValue(data.extraBed)}
-              onChange={(e) => handleNumberChange("extraBed", e.target.value)}
-              className="w-full border border-blue-300 rounded px-4 py-3 text-center text-xl font-semibold bg-white"
-              placeholder="Number of extra beds"
-              disabled={disabled}
-            />
-            <p className="text-xs text-blue-600 mt-2">
-              ⓘ Extra beds are available for children. Maximum {getNumericValue(data.children)} bed(s).
-            </p>
           </div>
-        )}
 
-        <p className="text-xs text-gray-500 mt-3">
-          Enter any combination of room types. Extra bed option appears when children are added.
-        </p>
-      </div>
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium mb-1">Singles</label>
+              <input
+                title="Singles"
+                type="number"
+                min="0"
+                value={getNumericValue(data.singles)}
+                onChange={(e) => handleNumberChange("singles", e.target.value)}
+                className="w-full border rounded px-4 py-3 text-center text-xl font-semibold"
+                disabled={disabled}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Twins</label>
+              <input
+                title="Twins"
+                type="number"
+                min="0"
+                value={getNumericValue(data.twins)}
+                onChange={(e) => handleNumberChange("twins", e.target.value)}
+                className="w-full border rounded px-4 py-3 text-center text-xl font-semibold"
+                disabled={disabled}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Doubles</label>
+              <input
+                title="Doubles"
+                type="number"
+                min="0"
+                value={getNumericValue(data.doubles)}
+                onChange={(e) => handleNumberChange("doubles", e.target.value)}
+                className="w-full border rounded px-4 py-3 text-center text-xl font-semibold"
+                disabled={disabled}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Triples</label>
+              <input
+                title="Triples"
+                type="number"
+                min="0"
+                value={getNumericValue(data.triples)}
+                onChange={(e) => handleNumberChange("triples", e.target.value)}
+                className="w-full border rounded px-4 py-3 text-center text-xl font-semibold"
+                disabled={disabled}
+              />
+            </div>
+          </div>
+
+          {showExtraBed && (
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-blue-700">
+                  Extra Bed {data.children ? `(for ${getNumericValue(data.children)} child${getNumericValue(data.children) > 1 ? 'ren' : ''})` : ''}
+                </label>
+                <span className="text-xs text-blue-600 font-medium">Optional</span>
+              </div>
+              <input
+                title="Extra Bed"
+                type="number"
+                min="0"
+                max={getNumericValue(data.children)}
+                value={getNumericValue(data.extraBed)}
+                onChange={(e) => handleNumberChange("extraBed", e.target.value)}
+                className="w-full border border-blue-300 rounded px-4 py-3 text-center text-xl font-semibold bg-white"
+                placeholder="Number of extra beds"
+                disabled={disabled}
+              />
+              <p className="text-xs text-blue-600 mt-2">
+                ⓘ Extra beds are available for children. Maximum {getNumericValue(data.children)} bed(s).
+              </p>
+            </div>
+          )}
+
+          <p className="text-xs text-gray-500 mt-3">
+            Enter any combination of room types. Extra bed option appears when children are added.
+          </p>
+        </div>
+      )}
 
       {/* Remarks */}
       <div>
